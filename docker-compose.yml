@@ -1,0 +1,53 @@
+# transmissor --TCP:5000--> canal --TCP:5001--> receptor
+#
+#   docker compose up --build                 # sobe tudo e transmite a mensagem
+#   docker compose run --rm transmissor       # transmite de novo (canal e receptor seguem no ar)
+#   MENSAGEM="OLA MUNDO" EBN0_DB=4 CANAL_TIPO=rajadas docker compose up
+#
+# Logs da sessão ficam em ./logs (montado no receptor).
+
+x-imagem: &imagem
+  build: .
+  image: redes-grau-b
+  user: "${UID:-1000}:${GID:-1000}"   # arquivos de log com o seu usuário, não root
+  init: true                          # repassa o SIGTERM ao Python (desliga na hora)
+  volumes:
+    - /etc/localtime:/etc/localtime:ro  # mesmo fuso horário da máquina nos logs
+
+services:
+  receptor:
+    <<: *imagem
+    command: python receptor.py
+    environment:
+      RECEPTOR_PORTA: 5001
+      PASTA_LOGS: /app/logs
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./logs:/app/logs
+
+  canal:
+    <<: *imagem
+    command: python canal.py
+    environment:
+      CANAL_PORTA: 5000
+      RECEPTOR_HOST: receptor
+      RECEPTOR_PORTA: 5001
+      CANAL_TIPO: ${CANAL_TIPO:-awgn}      # ideal | awgn | rajadas
+      EBN0_DB: ${EBN0_DB:-8}
+      SEMENTE: ${SEMENTE:-42}
+      P_BOM_RUIM: ${P_BOM_RUIM:-0.01}
+      P_RUIM_BOM: ${P_RUIM_BOM:-0.1}
+      RAJADA_DB: ${RAJADA_DB:-10}
+    depends_on: [receptor]
+
+  transmissor:
+    <<: *imagem
+    command: python transmissor.py
+    environment:
+      CANAL_HOST: canal
+      CANAL_PORTA: 5000
+      MENSAGEM: ${MENSAGEM:-REDES DE COMPUTADORES - UNISINOS 2026}
+      TECNICAS: ${TECNICAS:-todas}
+      VARRER_EBN0_DB: ${VARRER_EBN0_DB:-}   # ex.: 0,2,4,6,8,10,12,14
+      VARRER_CANAIS: ${VARRER_CANAIS:-}     # ex.: awgn,rajadas
+    depends_on: [canal]

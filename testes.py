@@ -4,6 +4,9 @@ import numpy as np
 import codificador as c
 import main
 import modulador as m
+import canal
+import mensagem
+import protocolo
 import ruido
 
 
@@ -58,6 +61,44 @@ def teste_ber_simulada_igual_a_teorica():
         esperada = teorica(sigma)
         print(f"  {nome:13s} simulada {simulada:.5f}   teórica {esperada:.5f}")
         assert abs(simulada - esperada) / esperada < 0.10, nome
+
+
+def teste_ascii_recusa_acento():
+    assert mensagem.ascii_para_bits("OLA").tolist()[:8] == [0, 1, 0, 0, 1, 1, 1, 1]
+    try:
+        mensagem.ascii_para_bits("ESTAÇÃO")
+    except ValueError:
+        return
+    raise AssertionError("aceitou caractere fora do ASCII")
+
+
+def teste_protocolo_ida_e_volta():
+    import socket
+    a, b = socket.socketpair()
+    amostras = np.random.default_rng(4).normal(size=12_345)
+    protocolo.enviar_quadro(a, {"tecnica": "BPSK"}, amostras)
+    cabecalho, recebidas = protocolo.receber_quadro(b)
+    assert cabecalho["tecnica"] == "BPSK" and np.array_equal(recebidas, amostras)
+    a.close(), b.close()
+
+
+def teste_canal_ideal_nao_altera():
+    sinal = m.BPSK([1, 0, 1])
+    recebido, _ = canal.aplicar(sinal, ruido.N, "ideal", None, np.random.default_rng(0))
+    assert np.array_equal(recebido, sinal)
+
+
+def teste_canal_ebn0_bate_com_teoria():
+    """Com o ruído calibrado por Eb/N0, a BER simulada segue Q(sqrt(K Eb/N0))."""
+    rng = np.random.default_rng(5)
+    bits = rng.integers(0, 2, 100_000)
+    for nome, (gerar, recuperar, _) in ruido.TECNICAS.items():
+        for tipo in ("awgn", "rajadas"):
+            recebido, _ = canal.aplicar(gerar(bits), ruido.N, tipo, 4.0, rng)
+            simulada = ruido.taxa_erro(bits, recuperar(recebido))
+            esperada = canal.ber_teorica(nome, tipo, 4.0)
+            print(f"  {nome:13s} {tipo:8s} simulada {simulada:.5f}   teórica {esperada:.5f}")
+            assert abs(simulada - esperada) / esperada < 0.15, (nome, tipo)
 
 
 if __name__ == "__main__":

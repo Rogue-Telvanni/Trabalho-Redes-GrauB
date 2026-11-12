@@ -6,6 +6,7 @@ import codificador
 import graficos
 import modulador
 import ruido
+from mensagem import bits_para_texto, texto_para_bits
 
 PASTA = Path(__file__).parent / "graficos"
 BITS_NO_GRAFICO = 16   # "OU", os 2 primeiros caracteres da mensagem
@@ -13,15 +14,6 @@ BITS_NO_TESTE = 50_000  # bits aleatórios para estimar a taxa de erro
 SIGMA_ONDAS = 0.5
 SIGMA_MENSAGEM = 4.0
 SIGMAS = np.arange(1.0, 8.5, 0.5)
-
-
-def texto_para_bits(texto):
-    """UTF-8: letras acentuadas (É, Ç, Ã) ocupam 2 bytes, as demais 1."""
-    return np.unpackbits(np.frombuffer(texto.encode("utf-8"), dtype=np.uint8)).astype(int)
-
-
-def bits_para_texto(bits):
-    return np.packbits(np.asarray(bits, dtype=np.uint8)).tobytes().decode("utf-8", errors="replace")
 
 
 def gerar_graficos_sinais(bits):
