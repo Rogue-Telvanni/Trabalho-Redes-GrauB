@@ -1,6 +1,6 @@
 Arquitetura do sistema
 
-<img width="792" height="202" alt="Sinal drawio" src="https://github.com/user-attachments/assets/b3050797-fff6-4687-b47d-5668e1f4c3a9" />
+<img width="962" height="402" alt="Sinal drawio (1)" src="https://github.com/user-attachments/assets/3a495509-3487-454b-aa3b-aea43fd6756c" />
 
 Graficos gerados
 
