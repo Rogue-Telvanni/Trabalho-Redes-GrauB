@@ -49,5 +49,7 @@ services:
       MENSAGEM: ${MENSAGEM:-REDES DE COMPUTADORES - UNISINOS 2026}
       TECNICAS: ${TECNICAS:-todas}
       VARRER_EBN0_DB: ${VARRER_EBN0_DB:-}   # ex.: 0,2,4,6,8,10,12,14
-      VARRER_CANAIS: ${VARRER_CANAIS:-}     # ex.: awgn,rajadas
+      VARRER_CANAIS: ${VARRER_CANAIS:-ideal,awgn,rajadas}
     depends_on: [canal]
+    stdin_open: true   # modo interativo: docker compose run --rm transmissor python transmissor.py --interativo
+    tty: true

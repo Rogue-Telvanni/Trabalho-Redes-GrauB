@@ -79,7 +79,8 @@ def main():
         print(texto_log, end="", flush=True)
 
         return {"erros": len(errados), "ber": ber, "texto_recebido": recebido,
-                "canal": descrever_canal(info)}
+                "canal": descrever_canal(info), "posicoes_erros": errados,
+                "diferenca": mensagem.marcar_caracteres(errados, len(enviado))}
 
     protocolo.servir(porta, tratar)
 
