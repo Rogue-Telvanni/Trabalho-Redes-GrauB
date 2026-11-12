@@ -1,3 +1,7 @@
+Arquitetura do sistema
+
+<img width="792" height="202" alt="Sinal drawio" src="https://github.com/user-attachments/assets/b3050797-fff6-4687-b47d-5668e1f4c3a9" />
+
 Graficos gerados
 
 Grafico do ERRO ber por técnica
