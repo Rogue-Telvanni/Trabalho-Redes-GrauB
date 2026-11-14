@@ -138,6 +138,18 @@ def _milhar(n):
     return f"{n:,}".replace(",", ".")
 
 
+def _barra(rodada, total_rodadas, feitos, total, decorrido, largura=24):
+    """Linha de progresso, ex.: rodada 2/5 · quadro 37/96 [█████░░░░░] 38%.
+
+    Depois da rodada mínima o total de rodadas deixa de ser conhecido (depende
+    do tempo), então só aparece o número da rodada.
+    """
+    cheio = round(largura * feitos / total)
+    de_total = f"/{total_rodadas}" if rodada <= total_rodadas else ""
+    return (f"  rodada {rodada}{de_total} · quadro {feitos}/{total} "
+            f"[{'█' * cheio}{'░' * (largura - cheio)}] {100 * feitos // total:3d}%  {decorrido:5.1f} s")
+
+
 def enviar_dados(tx, tecnicas, duracao_s):
     """Parte 2: bits aleatórios por duracao_s segundos, em rodadas completas.
 
@@ -161,12 +173,16 @@ def enviar_dados(tx, tecnicas, duracao_s):
     while rodada < max(min_rodadas, 1) or time.time() - inicio < duracao_s:
         bits = np.random.default_rng([semente, rodada]).integers(0, 2, n_bits)
         falhas = 0
-        for canal_tipo, ebn0_db, tecnica in combinacoes:
+        for i, (canal_tipo, ebn0_db, tecnica) in enumerate(combinacoes):
+            # "\r" volta ao início da linha: a barra se sobrescreve a cada quadro.
+            print("\r" + _barra(rodada + 1, min_rodadas, i, len(combinacoes), time.time() - inicio),
+                  end="", flush=True)
             resposta = tx.enviar(bits, tecnica, {"canal_tipo": canal_tipo, "ebn0_db": ebn0_db},
                                  "dados", rodada=rodada)
             falhas += "erro" in resposta
         rodada += 1
         decorrido = time.time() - inicio
+        print("\r" + " " * 90 + "\r", end="")  # apaga a barra antes da linha da rodada
         print(f"  rodada {rodada:2d} concluída  ({decorrido:5.1f} s, "
               f"{_milhar(rodada * n_bits)} bits por ponto)"
               f"{'  FALHAS: ' + str(falhas) if falhas else ''}", flush=True)
