@@ -39,7 +39,7 @@ mensagem ASCII → bits → codificação/modulação → canal ruidoso → demo
 
 Em cima dessa cadeia, o projeto:
 
-- compara **seis técnicas** (três codificações de linha e três modulações) sob o mesmo ruído;
+- compara **sete técnicas** (três codificações de linha e quatro modulações, uma delas de ordem superior: 16-QAM) sob o mesmo ruído;
 - usa dois cenários de canal: **AWGN** (ruído gaussiano branco) e **rajadas** (ruído em surtos, modelo Gilbert-Elliott), além do **canal ideal** para o teste de consistência;
 - calcula a **BER** simulada e a compara com a **BER teórica**;
 - calcula a **eficiência espectral nominal** (bits/s/Hz) e monta a tabela de compromisso entre BER e eficiência;
@@ -107,11 +107,12 @@ Em `modulador.py`. Os bits alteram um parâmetro de uma portadora senoidal, desl
 |---|---|---|---|
 | **ASK** | Amplitude | bit 1 → portadora de 1 V, bit 0 → silêncio | Mais simples e mais sensível a ruído |
 | **FSK** | Frequência | bit 1 → 7 kHz, bit 0 → 3 kHz | Amplitude constante, mas ocupa mais banda |
-| **BPSK** | Fase | bit 1 → fase 0°, bit 0 → fase 180° | Formas de onda opostas: a mais resistente das três |
+| **BPSK** | Fase | bit 1 → fase 0°, bit 0 → fase 180° | Formas de onda opostas: a mais resistente a ruído |
+| **16-QAM** | Amplitude e fase | 4 bits por símbolo: 2 bits escolhem a amplitude do seno (I) e 2 a do cosseno (Q), cada uma com 4 níveis | **Ordem superior**: 4× a eficiência do BPSK, mas os 16 pontos ficam mais próximos e o ruído os confunde com mais facilidade |
 
 Todas as frequências são múltiplos inteiros da taxa de bits, então cada bit contém um número inteiro de ciclos. O receptor demodula por **correlação** com a portadora de referência.
 
-> ⚠️ As três modulações atuais transmitem 1 bit por símbolo. A modulação de ordem superior (QPSK ou 16-QAM) exigida pelo enunciado ainda **não foi implementada**; veja [Status do Trabalho](#-status-do-trabalho).
+**Sobre o 16-QAM (modulação de ordem superior):** ASK, FSK e BPSK são binárias, ou seja, cada símbolo carrega 1 bit. No 16-QAM cada símbolo carrega **4 bits** (16 combinações), então o símbolo dura 4 vezes mais para a mesma taxa de bits e o sinal ocupa um quarto da banda. O mapeamento usa **código Gray**: pontos vizinhos da constelação diferem em um único bit, e assim o erro mais comum (cair no ponto vizinho) custa só 1 bit errado. O número de bits da mensagem precisa ser múltiplo de 4, o que o ASCII (8 bits por caractere) já garante.
 
 ### 4. Modelos de canal
 
@@ -129,7 +130,7 @@ Isso representa interferências reais, como um motor ligando perto de um cabo, q
 
 - **BER** (*Bit Error Rate*): fração dos bits recebidos que estão errados. `BER = bits errados / bits transmitidos`.
 - **Eb/N0** (dB): energia por bit dividida pela densidade espectral do ruído. É a "relação sinal-ruído" normalizada por bit, usada nas curvas BER × SNR.
-- **BER teórica** em AWGN: `Q(√(K · Eb/N0))`, com K = 2 para sinais antipodais (NRZ polar, Manchester, BPSK) e K = 1 para on-off e ortogonais (NRZ unipolar, ASK, FSK). Os dois grupos ficam separados por 3 dB.
+- **BER teórica** em AWGN: `Q(√(K · Eb/N0))`, com K = 2 para sinais antipodais (NRZ polar, Manchester, BPSK) e K = 1 para on-off e ortogonais (NRZ unipolar, ASK, FSK). Os dois grupos ficam separados por 3 dB. O 16-QAM com código Gray tem fórmula própria: `3/4·Q(a) + 1/2·Q(3a) − 1/4·Q(5a)`, com `a = √(0,8 · Eb/N0)`.
 - **Eficiência espectral nominal** (bits/s/Hz): taxa de bits dividida pela banda ocupada até o primeiro nulo do espectro.
 
 | Técnica | Banda nominal | Eficiência (bit/s/Hz) |
@@ -137,7 +138,8 @@ Isso representa interferências reais, como um motor ligando perto de um cabo, q
 | NRZ unipolar / NRZ polar | Rb | 1,0 |
 | Manchester | 2·Rb | 0,5 |
 | ASK / BPSK | 2·Rb | 0,5 |
-| FSK | \|f1−f0\| + 2·Rb | 0,2 |
+| FSK | \|f1−f0\| + 2·Rb | 0,17 |
+| 16-QAM | Rb/2 | 2,0 |
 
 (Com Rb = 1000 bit/s, f0 = 3 kHz e f1 = 7 kHz.)
 
@@ -148,7 +150,7 @@ Isso representa interferências reais, como um motor ligando perto de um cabo, q
 ```
 Trabalho-Redes-GrauB/
 ├── codificador.py        # Codificação de linha: NRZ unipolar, NRZ polar, Manchester
-├── modulador.py          # Modulação: ASK, FSK, BPSK (e demoduladores)
+├── modulador.py          # Modulação: ASK, FSK, BPSK, 16-QAM (e demoduladores)
 ├── ruido.py              # Registro das técnicas, BER teórica, adição de ruído simples
 ├── canal.py              # Canal: ideal / AWGN / rajadas (e servidor TCP)
 ├── mensagem.py           # Texto ASCII <-> bits
@@ -277,8 +279,11 @@ python testes.py
 | `teste_conversao_texto` | Texto → bits → texto devolve a mesma mensagem (`'O'` = `01001111`) |
 | `teste_niveis_conhecidos` | Os níveis de tensão de NRZ e Manchester batem com os valores esperados |
 | `teste_manchester_tem_transicao_em_todo_bit` | Manchester tem transição em todo bit e média zero |
-| `teste_recuperacao_sem_ruido` | Sem ruído, as seis técnicas recuperam todos os bits |
+| `teste_recuperacao_sem_ruido` | Sem ruído, as sete técnicas recuperam todos os bits |
 | `teste_parametro_de_cada_modulacao` | ASK muda a amplitude, FSK a frequência e BPSK a fase (180°) |
+| `teste_16qam_constelacao_e_gray` | O 16-QAM gera os 16 pontos da constelação e pontos vizinhos diferem em 1 bit (Gray) |
+| `teste_16qam_potencia_e_bits_por_simbolo` | A potência média do 16-QAM bate com a usada na teoria, e tamanhos que não são múltiplos de 4 bits são recusados |
+| `teste_probabilidades_de_rajada_somam_um` | A distribuição de bits em rajada dentro de um símbolo é consistente |
 | `teste_ber_simulada_igual_a_teorica` | A BER simulada fica a menos de 10% da teórica |
 | `teste_ascii_recusa_acento` | Caracteres fora do ASCII são recusados |
 | `teste_protocolo_ida_e_volta` | O quadro enviado por socket chega idêntico |
@@ -298,7 +303,7 @@ Gera em `graficos/`:
 | Arquivo | Conteúdo |
 |---|---|
 | `1_codificacao_banda_base.png` | NRZ unipolar, NRZ polar e Manchester para os mesmos bits |
-| `2_modulacao_digital.png` | ASK, FSK e BPSK para os mesmos bits |
+| `2_modulacao_digital.png` | ASK, FSK, BPSK e 16-QAM para os mesmos bits |
 | `3_sinais_com_ruido.png` | Os sinais após o ruído |
 | `4_taxa_de_erro.png` | BER simulada x teórica por técnica |
 
@@ -340,7 +345,7 @@ Comandos (digite `/ajuda` no prompt):
 
 | Comando | Efeito |
 |---|---|
-| `/tecnica <nome>` | `todas`, `NRZ unipolar`, `NRZ polar`, `Manchester`, `ASK`, `FSK`, `BPSK` (aceita lista: `/tecnica BPSK,FSK`) |
+| `/tecnica <nome>` | `todas`, `NRZ unipolar`, `NRZ polar`, `Manchester`, `ASK`, `FSK`, `BPSK`, `16-QAM` (aceita lista: `/tecnica BPSK,FSK`) |
 | `/canal <tipo>` | `ideal`, `awgn`, `rajadas` ou `padrao` |
 | `/ebn0 <dB>` | Define o Eb/N0, ex.: `/ebn0 4` |
 | `/config` | Mostra a configuração atual |
@@ -357,7 +362,7 @@ python experimentos.py --bits 20000    # versão rápida para testar
 
 O que ele executa, em ordem:
 
-1. **Teste de consistência:** transmite a mensagem em canal ideal e em AWGN com Eb/N0 = 30 dB, nas seis técnicas. Todas devem recuperar a mensagem sem nenhum bit errado (`consistencia.txt`).
+1. **Teste de consistência:** transmite a mensagem em canal ideal e em AWGN com Eb/N0 = 30 dB, nas sete técnicas. Todas devem recuperar a mensagem sem nenhum bit errado (`consistencia.txt`).
 2. **Varredura:** para cada repetição (semente), técnica, cenário (AWGN e rajadas) e Eb/N0, transmite os bits e conta os erros.
 3. **Resumo estatístico:** média, desvio padrão e intervalo de confiança de 95% da BER por ponto, mais a BER teórica.
 4. **Tabela de compromisso:** BER × eficiência espectral e o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵.
@@ -403,7 +408,7 @@ Parâmetros fixos do sinal (em `modulador.py`): taxa de 1000 bit/s, amostragem d
 | `ber_resumo.csv` | Média, desvio, IC 95%, mínimo, máximo e BER teórica por ponto |
 | `compromisso.csv` / `.md` | Tabela BER × eficiência espectral |
 | `ber_por_tecnica.png` | AWGN × rajadas, um painel por técnica |
-| `ber_awgn_tecnicas.png` | As seis técnicas juntas em AWGN |
+| `ber_awgn_tecnicas.png` | As sete técnicas juntas em AWGN |
 
 **Reprodutibilidade:** as sementes são `default_rng([repetição, ...])` e o ruído de cada quadro nos containers usa `[SEMENTE, nº do quadro]`. Rodar o mesmo comando duas vezes dá exatamente os mesmos números. O `config.json` registra tudo o que é necessário para refazer o experimento.
 
@@ -419,14 +424,17 @@ Barras de erro dos gráficos: intervalo de confiança de 95% (t de Student) sobr
 
 Cada painel mostra uma técnica nos dois cenários. Os marcadores são a média simulada com IC 95%, e o tracejado é a teoria. As rajadas elevam a BER de forma mais visível em Eb/N0 alto, onde o AWGN sozinho quase não gera erros e a rajada passa a dominar.
 
-### As seis técnicas em AWGN
+### As técnicas em AWGN
 
 <img width="1440" height="960" alt="ber_awgn_tecnicas" src="https://github.com/user-attachments/assets/bdd91f18-235f-4455-8d6d-db139d23de66" />
 
-As curvas formam **dois grupos separados por 3 dB**:
+> As duas imagens acima são da versão com seis técnicas. Rode `python experimentos.py` para gerar as figuras atualizadas, que incluem o 16-QAM.
+
+As curvas formam **três grupos**:
 
 - **Antipodais** (NRZ polar, Manchester, BPSK): `Q(√(2·Eb/N0))`, o grupo de menor BER.
 - **On-off e ortogonais** (NRZ unipolar, ASK, FSK): `Q(√(Eb/N0))`, precisam de 3 dB a mais para a mesma BER.
+- **16-QAM**: a curva mais à direita. Precisa de cerca de 4 dB a mais que o BPSK para a mesma BER, porque os 16 pontos da constelação ficam mais próximos entre si.
 
 A simulação coincide com a teoria, o que valida o canal e a calibração do ruído por Eb/N0.
 
@@ -441,9 +449,12 @@ A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER
 | Manchester | 0,5 bit/s/Hz | Alta | Quando o sincronismo e a média zero importam mais que a banda (Ethernet) |
 | BPSK | 0,5 bit/s/Hz | Alta | Canal passa-faixa com pouca potência disponível |
 | ASK | 0,5 bit/s/Hz | Menor (−3 dB) | Hardware muito simples e baixo custo |
-| FSK | 0,2 bit/s/Hz | Menor (−3 dB), mas amplitude constante | Canais com variação de ganho, em que a banda sobra |
+| FSK | 0,17 bit/s/Hz | Menor (−3 dB), mas amplitude constante | Canais com variação de ganho, em que a banda sobra |
+| 16-QAM | 2,0 bit/s/Hz | A menor (cerca de −4 dB em relação ao BPSK) | Canal com pouca banda e boa relação sinal-ruído (Wi-Fi, cabo, enlaces de micro-ondas) |
 
-> A discussão final (incluindo o ganho de eficiência de uma modulação de ordem superior) será completada junto com a implementação de QPSK/16-QAM.
+**O compromisso central:** o 16-QAM transmite a mesma taxa de bits em um quarto da banda do BPSK (2,0 contra 0,5 bit/s/Hz), mas precisa de cerca de 10,5 dB de Eb/N0 para chegar a BER = 10⁻³, contra 6,8 dB do BPSK. Ou seja, ganha-se banda pagando com potência. Com sinal forte, o 16-QAM é a melhor escolha; com sinal fraco, o BPSK. É por isso que sistemas reais (como o Wi-Fi) trocam de modulação conforme a qualidade do canal.
+
+**Efeito das rajadas:** com ruído em rajadas, a diferença entre as técnicas diminui (em 8 dB, todas ficam com BER entre 10⁻² e 3·10⁻²), porque durante a rajada qualquer técnica erra. Aumentar a potência ajuda pouco nesse cenário; a solução prática seria um código corretor de erros com entrelaçamento, que este trabalho não implementa.
 
 ---
 
@@ -465,14 +476,14 @@ A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER
 | Mensagem ASCII convertida em bits | ✅ Feito |
 | Pelo menos duas codificações de linha | ✅ Feito (NRZ unipolar, NRZ polar, Manchester) |
 | Explicação linha × correção de erros | ✅ Feito (seção de conceitos) |
-| Pelo menos três modulações, uma de ordem superior | ⚠️ Parcial: ASK, FSK e BPSK feitas; **falta QPSK ou 16-QAM** |
+| Pelo menos três modulações, uma de ordem superior | ✅ Feito (ASK, FSK, BPSK e 16-QAM) |
 | Canal AWGN com controle de SNR + segundo cenário | ✅ Feito (AWGN e rajadas, por Eb/N0) |
 | Demodulação, reconstrução e bits errados identificados | ✅ Feito |
 | BER e eficiência espectral nominal | ✅ Feito |
 | 8 valores de SNR, 100.000 bits, 5 repetições | ✅ Feito |
 | Curvas BER × SNR com variabilidade | ✅ Feito (IC 95%) |
 | Teste de consistência | ✅ Feito |
-| Tabela BER × eficiência | ✅ Feito (falta incluir a ordem superior) |
+| Tabela BER × eficiência | ✅ Feito |
 | Constelações / comparação com teoria (opcional) | ⚠️ Teoria feita; constelações pendentes |
 | Resultados brutos versionados no GitHub | ⚠️ Pendente (`resultados/` está no `.gitignore`) |
 | Vídeo de até 5 minutos | ⚠️ Pendente |
