@@ -390,7 +390,7 @@ Todos são variáveis de ambiente, lidas pelo `docker-compose.yml` (valores padr
 | `P_RUIM_BOM` | canal | Probabilidade de a rajada terminar, por bit (`0.1`) |
 | `RAJADA_DB` | canal | Quanto o ruído sobe durante a rajada, em dB (`10`) |
 
-Parâmetros fixos do sinal (em `modulador.py`): taxa de 1000 bit/s, amostragem de 100 kHz (100 amostras por bit), portadora de 5 kHz (ASK e BPSK), FSK em 3 kHz e 7 kHz, amplitude de 1 V.
+Parâmetros fixos do sinal (em `modulador.py`): taxa de 1000 bit/s, amostragem de 100 kHz (100 amostras por bit), portadora de 5 kHz (ASK, BPSK e 16-QAM), FSK em 3 kHz e 7 kHz, amplitude de 1 V.
 
 ---
 
