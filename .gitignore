@@ -221,6 +221,7 @@ __marimo__/
 
 # Projeto
 .idea/
+graficos/
 
 # Claude Code
 .claude/
