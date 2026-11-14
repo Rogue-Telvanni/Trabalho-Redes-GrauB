@@ -14,7 +14,8 @@ Gera em resultados/:
     ber_resumo.csv     média, desvio, IC 95% e BER teórica por ponto
     compromisso.csv    tabela BER x eficiência espectral (também em .md)
     ber_por_tecnica.png    AWGN x rajadas, um painel por técnica
-    ber_awgn_tecnicas.png  as seis técnicas juntas em AWGN
+    ber_awgn_tecnicas.png  as sete técnicas juntas em AWGN
+    constelacao_16qam.png  constelação do 16-QAM antes e depois do canal
 """
 import argparse
 import csv
@@ -29,7 +30,7 @@ import matplotlib
 import numpy as np
 
 import canal
-import graficos  # noqa: F401  (aplica o estilo comum das figuras)
+import graficos  # aplica o estilo comum das figuras e desenha a constelação
 import mensagem
 import modulador
 import ruido
@@ -297,6 +298,41 @@ def grafico_awgn(resumo, ebn0s, limite, caminho, legenda_extra):
     plt.close(fig)
 
 
+def constelacao_16qam(caminho, n_bits=8000, semente=777):
+    """Constelação do 16-QAM antes do canal e depois dele, em três cenários.
+
+    Mostra onde o receptor mede cada símbolo (I, Q). Sem ruído os símbolos caem
+    nos 16 pontos ideais; com ruído viram nuvens, e os que cruzam um limiar de
+    decisão são decodificados errado.
+    """
+    bits = np.random.default_rng([semente, 0]).integers(0, 2, n_bits)
+    limpo = modulador.QAM16(bits)
+    cenarios = [("ideal", None, "Antes do canal (sinal enviado)"),
+                ("awgn", 14.0, "Depois: AWGN, Eb/N0 14 dB"),
+                ("awgn", 8.0, "Depois: AWGN, Eb/N0 8 dB"),
+                ("rajadas", 14.0, "Depois: rajadas, Eb/N0 14 dB")]
+    paineis = []
+    for k, (tipo, ebn0, nome) in enumerate(cenarios):
+        rng = np.random.default_rng([semente, 1 + k])
+        recebido, _ = canal.aplicar(limpo, ruido.N, tipo, ebn0, rng)
+        i, q = modulador.simbolos_QAM16(recebido)
+        bits_errados = modulador.demodular_QAM16(recebido) != bits
+        errado = bits_errados.reshape(-1, modulador.BITS_POR_SIMBOLO_QAM).any(axis=1)
+        ber = bits_errados.mean()
+        ber_txt = "0" if ber == 0 else f"{ber:.1e}".replace(".", ",")
+        painel = {"titulo": f"{nome}\n{int(errado.sum())} de {len(errado)} símbolos errados, BER {ber_txt}",
+                  "i": i, "q": q, "errado": errado}
+        if tipo == "ideal":  # os 4 bits de cada ponto (código Gray), só no primeiro painel
+            todos = np.array([[a, b, c, d] for a in (0, 1) for b in (0, 1)
+                              for c in (0, 1) for d in (0, 1)])
+            pi, pq = modulador.simbolos_QAM16(modulador.QAM16(todos.ravel()))
+            painel["rotulos"] = [(x, y, "".join(map(str, b))) for x, y, b in zip(pi, pq, todos)]
+        paineis.append(painel)
+    graficos.constelacao(
+        paineis, f"Constelação do 16-QAM: {len(bits) // 4} símbolos ({n_bits} bits). "
+                 "Código Gray: pontos vizinhos diferem em 1 bit.", caminho)
+
+
 # ---------------------------------------------------------------- main
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -347,6 +383,7 @@ def main():
     extra = f"{args.bits:,} bits x {len(sementes)} sementes por ponto.".replace(",", ".")
     grafico_por_tecnica(resumo, ebn0s, limite, saida / "ber_por_tecnica.png", extra)
     grafico_awgn(resumo, ebn0s, limite, saida / "ber_awgn_tecnicas.png", extra)
+    constelacao_16qam(saida / "constelacao_16qam.png")
     print(f"Resultados em: {saida}")
 
 

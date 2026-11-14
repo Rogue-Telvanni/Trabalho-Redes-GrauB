@@ -197,3 +197,49 @@ def sobreposicao_canal(paineis, titulo, caminho):
     fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(caminho, dpi=160)
     plt.close(fig)
+
+
+def constelacao(paineis, titulo, caminho):
+    """Diagrama de constelação do 16-QAM: um painel por cenário de canal.
+
+    paineis: dicionários com titulo, i, q (coordenadas medidas pelo receptor,
+    em volts), errado (booleano por símbolo) e, opcionalmente, rotulos: lista
+    de (i, q, texto) com os 4 bits de cada ponto ideal.
+    """
+    d = modulador.NIVEL_QAM
+    niveis = np.array([-3, -1, 1, 3]) * d
+    limite = 1.8
+    fig, eixos = plt.subplots(1, len(paineis), figsize=(4.3 * len(paineis), 5.8),
+                              sharex=True, sharey=True)
+    for ax, p in zip(np.atleast_1d(eixos), paineis):
+        for limiar in (-2 * d, 0, 2 * d):  # fronteiras entre os pontos vizinhos
+            ax.axvline(limiar, color=GRADE, lw=0.9, ls="--", zorder=0)
+            ax.axhline(limiar, color=GRADE, lw=0.9, ls="--", zorder=0)
+        i, q, errado = np.asarray(p["i"]), np.asarray(p["q"]), np.asarray(p["errado"])
+        ax.plot(i[~errado], q[~errado], "o", color=SERIES[0], ms=3, alpha=0.45, mew=0, zorder=2)
+        ax.plot(i[errado], q[errado], "x", color=ERRO, ms=5, mew=1.2, zorder=3)
+        gi, gq = np.meshgrid(niveis, niveis)
+        ax.plot(gi.ravel(), gq.ravel(), "o", mfc="none", mec=TINTA, ms=9, mew=1.1, zorder=4)
+        for x, y, texto in p.get("rotulos", []):
+            ax.text(x, y + 0.11, texto, ha="center", va="bottom", fontsize=7.5, color=TINTA_2, zorder=5)
+        ax.set_xlim(-limite, limite)
+        ax.set_ylim(-limite, limite)
+        ax.set_aspect("equal")
+        ax.set_xticks(niveis, ["-1", "-1/3", "+1/3", "+1"])
+        ax.set_yticks(niveis, ["-1", "-1/3", "+1/3", "+1"])
+        ax.set_title(p["titulo"], pad=8, fontsize=10)
+        ax.set_xlabel("I: amplitude do seno (V)")
+    np.atleast_1d(eixos)[0].set_ylabel("Q: amplitude do cosseno (V)")
+    alcas = [
+        plt.Line2D([], [], ls="none", marker="o", color=SERIES[0], ms=5, mew=0),
+        plt.Line2D([], [], ls="none", marker="x", color=ERRO, ms=6, mew=1.2),
+        plt.Line2D([], [], ls="none", marker="o", mfc="none", mec=TINTA, ms=9, mew=1.1),
+        plt.Line2D([], [], ls="--", color=GRADE, lw=0.9),
+    ]
+    rotulos = ["Símbolo recebido, decodificado certo", "Símbolo recebido, decodificado errado",
+               "Ponto ideal da constelação", "Limiar de decisão"]
+    fig.legend(alcas, rotulos, loc="lower center", ncols=4, frameon=False, fontsize=9)
+    fig.suptitle(titulo, x=0.01, ha="left", fontsize=10.5, color=TINTA_2)
+    fig.tight_layout(rect=(0, 0.09, 1, 0.97))
+    fig.savefig(caminho, dpi=160)
+    plt.close(fig)

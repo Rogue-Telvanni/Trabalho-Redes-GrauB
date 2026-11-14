@@ -366,7 +366,7 @@ O que ele executa, em ordem:
 2. **Varredura:** para cada repetição (semente), técnica, cenário (AWGN e rajadas) e Eb/N0, transmite os bits e conta os erros.
 3. **Resumo estatístico:** média, desvio padrão e intervalo de confiança de 95% da BER por ponto, mais a BER teórica.
 4. **Tabela de compromisso:** BER × eficiência espectral e o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵.
-5. **Gráficos:** BER × Eb/N0 com barras de erro.
+5. **Gráficos:** BER × Eb/N0 com barras de erro e o diagrama de constelação do 16-QAM.
 
 ---
 
@@ -409,6 +409,7 @@ Parâmetros fixos do sinal (em `modulador.py`): taxa de 1000 bit/s, amostragem d
 | `compromisso.csv` / `.md` | Tabela BER × eficiência espectral |
 | `ber_por_tecnica.png` | AWGN × rajadas, um painel por técnica |
 | `ber_awgn_tecnicas.png` | As sete técnicas juntas em AWGN |
+| `constelacao_16qam.png` | Constelação do 16-QAM antes e depois do canal |
 
 **Reprodutibilidade:** as sementes são `default_rng([repetição, ...])` e o ruído de cada quadro nos containers usa `[SEMENTE, nº do quadro]`. Rodar o mesmo comando duas vezes dá exatamente os mesmos números. O `config.json` registra tudo o que é necessário para refazer o experimento.
 
@@ -435,6 +436,17 @@ As curvas formam **três grupos**:
 - **16-QAM**: a curva mais à direita. Precisa de cerca de 4 dB a mais que o BPSK para a mesma BER, porque os 16 pontos da constelação ficam mais próximos entre si.
 
 A simulação coincide com a teoria, o que valida o canal e a calibração do ruído por Eb/N0.
+
+### Constelação do 16-QAM antes e depois do canal
+
+<img alt="Constelação do 16-QAM antes e depois do canal" src="resultados/constelacao_16qam.png" />
+
+Cada ponto é um símbolo (4 bits) medido pelo receptor: o eixo horizontal é a amplitude do seno (I) e o vertical a do cosseno (Q). As linhas tracejadas são os limiares de decisão.
+
+- **Antes do canal:** os símbolos caem exatamente nos 16 pontos ideais. Os rótulos mostram os 4 bits de cada ponto, em código Gray (vizinhos diferem em 1 bit).
+- **AWGN, 14 dB:** o ruído transforma cada ponto em uma nuvem pequena, que não chega aos limiares. Nenhum símbolo errado.
+- **AWGN, 8 dB:** as nuvens crescem e se encostam. Os símbolos que cruzam um limiar (marcados com ×) são decodificados como o ponto vizinho.
+- **Rajadas, 14 dB:** a maioria dos símbolos fica tão concentrada quanto no AWGN de 14 dB, mas os que caem dentro de uma rajada são espalhados para longe. Os erros vêm desses poucos símbolos, e não de um ruído uniforme.
 
 ### Compromisso BER × eficiência espectral
 
@@ -482,7 +494,7 @@ A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER
 | Curvas BER × SNR com variabilidade | ✅ Feito (IC 95%) |
 | Teste de consistência | ✅ Feito |
 | Tabela BER × eficiência | ✅ Feito |
-| Constelações / comparação com teoria (opcional) | ⚠️ Teoria feita; constelações pendentes |
+| Constelações / comparação com teoria (opcional) | ✅ Feito (constelação do 16-QAM e curvas teóricas) |
 | Resultados brutos versionados no GitHub | ✅ Feito (pasta `resultados/`) |
 | Vídeo de até 5 minutos | ⚠️ Pendente |
 
