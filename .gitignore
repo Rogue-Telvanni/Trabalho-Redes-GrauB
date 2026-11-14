@@ -222,3 +222,6 @@ __marimo__/
 # Projeto
 .idea/
 resultados/
+
+# Claude Code
+.claude/
