@@ -246,11 +246,17 @@ def _rotulo_limite(ax, ebn0s, limite):
 
 
 def grafico_por_tecnica(resumo, ebn0s, limite, caminho, legenda_extra):
-    fig, eixos = plt.subplots(2, 4, figsize=(17, 8), sharex=True, sharey=True)
+    # Linha de cima: codificações de linha. Linha de baixo: modulações.
+    linhas = [list(ruido.TECNICAS_BANDA_BASE), list(ruido.TECNICAS_MODULACAO)]
+    colunas = max(len(l) for l in linhas)
+    fig, eixos = plt.subplots(2, colunas, figsize=(4.25 * colunas, 8), sharex=True, sharey=True)
     xt = np.linspace(min(ebn0s), max(ebn0s), 200)
-    for ax in eixos.ravel()[len(ruido.TECNICAS):]:
-        ax.set_visible(False)  # sobra um painel: 7 técnicas em 2 x 4
-    for ax, nome in zip(eixos.ravel(), ruido.TECNICAS):
+    usados = []
+    for linha, nomes in enumerate(linhas):
+        for ax in eixos[linha, len(nomes):]:
+            ax.set_visible(False)  # sobra um painel na linha das codificações
+        usados += list(zip(eixos[linha], nomes))
+    for ax, nome in usados:
         for i, tipo in enumerate(CANAIS):
             rotulo = "AWGN" if tipo == "awgn" else "Rajadas"
             ax.plot(xt, [canal.ber_teorica(nome, tipo, v) for v in xt], color=CORES[i],
@@ -258,13 +264,12 @@ def grafico_por_tecnica(resumo, ebn0s, limite, caminho, legenda_extra):
             _desenhar(ax, *_serie(resumo, nome, tipo), CORES[i], MARCADORES[i], rotulo)
         _eixos(ax, limite)
         ax.set_title(nome, pad=8)
-    for ax in eixos.ravel()[:len(ruido.TECNICAS)]:
+    for ax, _ in usados:
         _rotulo_limite(ax, ebn0s, limite)
-    for ax in (eixos[0, 3], eixos[1, 0], eixos[1, 1], eixos[1, 2]):
+    for ax in eixos[-1]:
         ax.set_xlabel("Eb/N0 (dB)")
-        ax.xaxis.set_tick_params(labelbottom=True)
-    for ax in eixos[:, 0]:
-        ax.set_ylabel("BER")
+    eixos[0, 0].set_ylabel("Codificação de linha\nBER")
+    eixos[1, 0].set_ylabel("Modulação digital\nBER")
     eixos[0, 0].legend(frameon=False, loc="upper right")
     fig.suptitle("BER x Eb/N0: AWGN e rajadas. Marcadores: média simulada com IC 95%. "
                  f"Tracejado: teoria. {legenda_extra}", x=0.01, ha="left", fontsize=10, color=TINTA_2)

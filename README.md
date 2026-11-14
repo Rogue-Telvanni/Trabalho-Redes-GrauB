@@ -23,9 +23,7 @@ Projeto prático do Grau B (GB) da disciplina de Redes de Computadores (UNISINOS
 7. [Parâmetros Configuráveis](#️-parâmetros-configuráveis)
 8. [Dados Coletados e Reprodutibilidade](#-dados-coletados-e-reprodutibilidade)
 9. [Resultados e Análise](#-resultados-e-análise)
-10. [Divisão de Responsabilidades](#-divisão-de-responsabilidades)
-11. [Status do Trabalho](#-status-do-trabalho)
-12. [Demonstração em Vídeo](#-demonstração-em-vídeo)
+10. [Demonstração em Vídeo](#-demonstração-em-vídeo)
 
 ---
 
@@ -465,38 +463,6 @@ A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER
 **O compromisso central:** o 16-QAM transmite a mesma taxa de bits em um quarto da banda do BPSK (2,0 contra 0,5 bit/s/Hz), mas precisa de cerca de 10,5 dB de Eb/N0 para chegar a BER = 10⁻³, contra 6,8 dB do BPSK. Ou seja, ganha-se banda pagando com potência. Com sinal forte, o 16-QAM é a melhor escolha; com sinal fraco, o BPSK. É por isso que sistemas reais (como o Wi-Fi) trocam de modulação conforme a qualidade do canal.
 
 **Efeito das rajadas:** com ruído em rajadas, a diferença entre as técnicas diminui (em 8 dB, todas ficam com BER entre 10⁻² e 3·10⁻²), porque durante a rajada qualquer técnica erra. Aumentar a potência ajuda pouco nesse cenário; a solução prática seria um código corretor de erros com entrelaçamento, que este trabalho não implementa.
-
----
-
-## 👥 Divisão de Responsabilidades
-
-> Preencher antes da entrega: o enunciado avalia a participação equilibrada da dupla.
-
-| Integrante | Responsabilidades |
-|---|---|
-| **Integrante 1** | _a preencher_ |
-| **Integrante 2** | _a preencher_ |
-
----
-
-## ✅ Status do Trabalho
-
-| Requisito do enunciado | Situação |
-|---|---|
-| Mensagem ASCII convertida em bits | ✅ Feito |
-| Pelo menos duas codificações de linha | ✅ Feito (NRZ unipolar, NRZ polar, Manchester) |
-| Explicação linha × correção de erros | ✅ Feito (seção de conceitos) |
-| Pelo menos três modulações, uma de ordem superior | ✅ Feito (ASK, FSK, BPSK e 16-QAM) |
-| Canal AWGN com controle de SNR + segundo cenário | ✅ Feito (AWGN e rajadas, por Eb/N0) |
-| Demodulação, reconstrução e bits errados identificados | ✅ Feito |
-| BER e eficiência espectral nominal | ✅ Feito |
-| 8 valores de SNR, 100.000 bits, 5 repetições | ✅ Feito |
-| Curvas BER × SNR com variabilidade | ✅ Feito (IC 95%) |
-| Teste de consistência | ✅ Feito |
-| Tabela BER × eficiência | ✅ Feito |
-| Constelações / comparação com teoria (opcional) | ✅ Feito (constelação do 16-QAM e curvas teóricas) |
-| Resultados brutos versionados no GitHub | ✅ Feito (pasta `resultados/`) |
-| Vídeo de até 5 minutos | ⚠️ Pendente |
 
 ---
 

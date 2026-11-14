@@ -1,5 +1,5 @@
 {
-  "data": "2026-11-14 12:02:52",
+  "data": "2026-11-14 12:50:53",
   "bits_por_repeticao": 100000,
   "sementes": [
     0,
@@ -48,6 +48,6 @@
   "semente_ruido": "default_rng([semente, 1 + índice técnica, índice canal, índice Eb/N0])",
   "semente_bits": "default_rng([semente, 0])",
   "python": "3.12.6",
-  "numpy": "2.5.4",
-  "matplotlib": "3.11.2"
+  "numpy": "2.4.4",
+  "matplotlib": "3.10.8"
 }
