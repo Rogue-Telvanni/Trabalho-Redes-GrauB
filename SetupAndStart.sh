@@ -3,7 +3,9 @@
 #
 # Uso:
 #   ./SetupAndStart.sh               automático: envia MENSAGEM com cada técnica
-#                                    nos cenários ideal, awgn e rajadas, e desliga
+#                                    nos cenários ideal, awgn e rajadas; depois
+#                                    envia dados aleatórios por DURACAO_S segundos
+#                                    e gera os gráficos da sessão
 #   ./SetupAndStart.sh interativo    deixa canal e receptor ligados e abre o
 #                                    transmissor no terminal: cada linha digitada
 #                                    é transmitida (/ajuda mostra os comandos)
@@ -17,18 +19,23 @@
 #   CANAL_TIPO      cenário padrão do canal: ideal | awgn | rajadas (padrão: awgn)
 #   EBN0_DB         Eb/N0 padrão do canal em dB   (padrão: 8)
 #   SEMENTE         semente do ruído              (padrão: 42)
-#   VARRER_CANAIS   cenários do modo automático   (padrão: ideal,awgn,rajadas)
-#   VARRER_EBN0_DB  lista de Eb/N0 do modo automático (padrão: o EBN0_DB do canal)
+#   VARRER_CANAIS   cenários da mensagem          (padrão: ideal,awgn,rajadas)
+#   VARRER_EBN0_DB  Eb/N0 da mensagem             (padrão: 20,8)
+#   DURACAO_S       segundos enviando dados aleatórios (padrão: 30; 0 desliga)
+#   BITS_POR_QUADRO bits aleatórios por quadro    (padrão: 20000)
+#   DADOS_CANAIS    cenários dos dados            (padrão: awgn,rajadas)
+#   DADOS_EBN0_DB   Eb/N0 dos dados               (padrão: 0,2,4,6,8,10,12,14)
 #   P_BOM_RUIM, P_RUIM_BOM, RAJADA_DB   parâmetros das rajadas
 #
-# Logs: logs/sessao_<data-hora>.log, logs/quadros.jsonl e logs/sinais/.
+# Saídas: logs/sessao_<data-hora>.log, logs/quadros.jsonl, logs/canal/ (sinais
+# antes e depois do ruído) e logs/graficos_<data-hora>/ (gráficos da sessão).
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
 modo="${1:-automatico}"
 case "$modo" in
-    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     automatico|interativo) ;;
     *) echo "modo desconhecido: $modo (use: automatico | interativo | --help)" >&2; exit 2 ;;
 esac
@@ -65,8 +72,13 @@ if [[ "$modo" == "interativo" ]]; then
     echo
     docker compose run --rm transmissor python transmissor.py --interativo || status=$?
 else
-    echo "==> Transmitindo..."
+    echo "==> Transmitindo (mensagem + ${DURACAO_S:-30} s de dados)..."
     docker compose up --abort-on-container-exit --exit-code-from transmissor || status=$?
+    if [[ $status -eq 0 && "${DURACAO_S:-30}" != "0" ]]; then
+        echo
+        echo "==> Gerando os gráficos da sessão..."
+        docker compose run --rm --no-deps -T receptor python graficos_sessao.py || status=$?
+    fi
 fi
 
 echo
@@ -74,7 +86,9 @@ if [[ $status -eq 0 ]]; then
     ultimo_log=$(ls -t logs/sessao_*.log 2>/dev/null | head -n 1 || true)
     echo "==> Sessão concluída."
     [[ -n "$ultimo_log" ]] && echo "    Log da sessão    : $ultimo_log"
-    echo "    Dados p/ gráficos: logs/quadros.jsonl e logs/sinais/"
+    ultimos_graficos=$(ls -td logs/graficos_*/ 2>/dev/null | head -n 1 || true)
+    [[ "$modo" == "automatico" && -n "$ultimos_graficos" ]] && echo "    Gráficos         : $ultimos_graficos"
+    echo "    Dados brutos     : logs/quadros.jsonl e logs/canal/"
 else
     echo "==> O transmissor terminou com erro (código $status). Veja as mensagens acima."
 fi

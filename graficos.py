@@ -28,13 +28,23 @@ plt.rcParams.update({
 TB_MS = 1000 / modulador.TAXA_BITS
 
 
-def _marcar_bits(ax, bits):
-    """Desenha os limites de cada bit e escreve o valor dele no topo do painel."""
+ERRO = "#d03b3b"        # cor de status "crítico": bit decodificado errado
+FAIXA_RAJADA = "#ecebe5"
+
+
+def _marcar_bits(ax, bits, errados=()):
+    """Desenha os limites de cada bit e escreve o valor dele no topo do painel.
+
+    Os índices em `errados` aparecem em vermelho e negrito (bit que o receptor
+    decodificou errado).
+    """
     transform = blended_transform_factory(ax.transData, ax.transAxes)
     for i, bit in enumerate(bits):
         ax.axvline(i * TB_MS, color=GRADE, lw=0.8, ls="--", zorder=0)
+        errado = i in errados
         ax.text((i + 0.5) * TB_MS, 1.02, str(bit), transform=transform,
-                ha="center", va="bottom", color=TINTA_2, fontsize=9.5)
+                ha="center", va="bottom", color=ERRO if errado else TINTA_2,
+                fontsize=9.5, fontweight="bold" if errado else "normal")
     ax.axvline(len(bits) * TB_MS, color=GRADE, lw=0.8, ls="--", zorder=0)
     ax.set_xlim(0, len(bits) * TB_MS)
 
@@ -127,5 +137,38 @@ def curvas_ber(grupos, caminho):
     fig.suptitle("Marcadores: simulação. Linhas: valor teórico.", x=0.01, ha="left",
                  fontsize=10, color=TINTA_2)
     fig.tight_layout()
+    fig.savefig(caminho, dpi=160)
+    plt.close(fig)
+
+
+def sobreposicao_canal(paineis, titulo, caminho):
+    """Sinal na entrada do canal (limpo) sobre o sinal na saída (com ruído).
+
+    paineis: até 6 dicionários com nome, subtitulo, bits, limpo, ruidoso,
+    rajada (booleano por bit) e errados (índices dos bits decodificados errados),
+    na ordem de ruido.TECNICAS: banda base na coluna 1, modulações na coluna 2.
+    """
+    fig, eixos = plt.subplots(3, 2, figsize=(13, 9), sharex=True)
+    for ax, p in zip(eixos.T.ravel(), paineis):
+        t = np.arange(len(p["limpo"])) / modulador.FREQ_AMOSTRAGEM * 1000
+        for i in np.flatnonzero(p["rajada"]):
+            ax.axvspan(i * TB_MS, (i + 1) * TB_MS, color=FAIXA_RAJADA, lw=0, zorder=0)
+        ax.plot(t, p["ruidoso"], color=SERIES[1], lw=0.6, alpha=0.8, label="Saída do canal (com ruído)")
+        ax.plot(t, p["limpo"], color=SERIES[0], lw=1.4, label="Entrada do canal (sinal enviado)")
+        _marcar_bits(ax, p["bits"], set(p["errados"]))
+        ax.axhline(0, color=GRADE, lw=0.8, zorder=0)
+        ax.set_title(f"{p['nome']}   {p['subtitulo']}", fontsize=10)
+        ax.set_ylabel("Tensão (V)")
+    for ax in eixos.T.ravel()[len(paineis):]:
+        ax.set_visible(False)
+    for ax in eixos[-1]:
+        ax.set_xlabel("Tempo (ms). Linhas tracejadas: limites de cada bit")
+    alcas, rotulos = eixos[0, 0].get_legend_handles_labels()
+    from matplotlib.patches import Patch
+    alcas += [Patch(color=FAIXA_RAJADA), plt.Line2D([], [], ls="none", marker="$1$", color=ERRO)]
+    rotulos += ["Bit dentro de rajada", "Bit decodificado errado"]
+    fig.legend(alcas, rotulos, loc="lower center", ncols=4, frameon=False, fontsize=9)
+    fig.suptitle(titulo, x=0.01, ha="left", fontsize=10.5, color=TINTA_2)
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(caminho, dpi=160)
     plt.close(fig)

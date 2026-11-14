@@ -4,7 +4,7 @@
 #   docker compose run --rm transmissor       # transmite de novo (canal e receptor seguem no ar)
 #   MENSAGEM="OLA MUNDO" EBN0_DB=4 CANAL_TIPO=rajadas docker compose up
 #
-# Logs da sessão ficam em ./logs (montado no receptor).
+# Logs da sessão ficam em ./logs (montado no receptor e no canal).
 
 x-imagem: &imagem
   build: .
@@ -38,6 +38,10 @@ services:
       P_BOM_RUIM: ${P_BOM_RUIM:-0.01}
       P_RUIM_BOM: ${P_RUIM_BOM:-0.1}
       RAJADA_DB: ${RAJADA_DB:-10}
+      PASTA_CAPTURAS: /app/logs/canal      # sinal antes e depois do ruído (quadros de mensagem)
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./logs:/app/logs
     depends_on: [receptor]
 
   transmissor:
@@ -48,8 +52,13 @@ services:
       CANAL_PORTA: 5000
       MENSAGEM: ${MENSAGEM:-REDES DE COMPUTADORES - UNISINOS 2026}
       TECNICAS: ${TECNICAS:-todas}
-      VARRER_EBN0_DB: ${VARRER_EBN0_DB:-}   # ex.: 0,2,4,6,8,10,12,14
-      VARRER_CANAIS: ${VARRER_CANAIS:-ideal,awgn,rajadas}
+      VARRER_CANAIS: ${VARRER_CANAIS:-ideal,awgn,rajadas}   # cenários da mensagem
+      VARRER_EBN0_DB: ${VARRER_EBN0_DB:-20,8}               # Eb/N0 da mensagem
+      DURACAO_S: ${DURACAO_S:-30}                           # segundos enviando dados aleatórios
+      BITS_POR_QUADRO: ${BITS_POR_QUADRO:-20000}
+      DADOS_CANAIS: ${DADOS_CANAIS:-awgn,rajadas}
+      DADOS_EBN0_DB: ${DADOS_EBN0_DB:-0,2,4,6,8,10,12,14}
+      SEMENTE: ${SEMENTE:-42}
     depends_on: [canal]
     stdin_open: true   # modo interativo: docker compose run --rm transmissor python transmissor.py --interativo
     tty: true

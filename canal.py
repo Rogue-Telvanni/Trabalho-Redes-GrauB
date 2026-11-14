@@ -16,9 +16,15 @@ Cenários (CANAL_TIPO):
 
 Pode ser usado como módulo (aplicar, ber_teorica) ou como servidor:
     python canal.py
+
+Como servidor, o canal é o único ponto que vê o sinal ANTES e DEPOIS do ruído.
+Nos quadros de mensagem ele guarda os dois em PASTA_CAPTURAS (um .npz por
+quadro), e o graficos_sessao.py desenha a sobreposição limpo x ruidoso.
 """
+import json
 import os
 from math import sqrt
+from pathlib import Path
 
 import numpy as np
 
@@ -99,6 +105,20 @@ def ber_teorica(tecnica, tipo, ebn0_db, p_bom_ruim=P_BOM_RUIM, p_ruim_bom=P_RUIM
     return (1 - fracao_ruim) * bom + fracao_ruim * ruim
 
 
+def capturar(pasta, cabecalho, limpo, recebido, info):
+    """Guarda o sinal antes e depois do ruído, com o que é preciso para desenhá-los."""
+    np.savez_compressed(
+        pasta / f"{cabecalho['sessao']}_q{cabecalho['quadro']:04d}.npz",
+        limpo=np.asarray(limpo, dtype=np.float32),
+        ruidoso=np.asarray(recebido, dtype=np.float32),
+        bits=np.frombuffer(cabecalho["referencia"]["bits"].encode("ascii"), np.uint8) - ord("0"),
+        amostras_por_bit=cabecalho["amostras_por_bit"],
+        tecnica=cabecalho["tecnica"],
+        texto=cabecalho["referencia"]["texto"] or "",
+        info=json.dumps(info),
+    )
+
+
 def main():
     porta = int(os.environ.get("CANAL_PORTA", 5000))
     destino = (os.environ.get("RECEPTOR_HOST", "localhost"), int(os.environ.get("RECEPTOR_PORTA", 5001)))
@@ -110,7 +130,12 @@ def main():
         "rajada_db": float(os.environ.get("RAJADA_DB", RAJADA_DB)),
     }
     semente = int(os.environ.get("SEMENTE", 42))
-    print(f"canal padrão: {padrao}, semente {semente}, repassando para {destino}", flush=True)
+    capturas = os.environ.get("PASTA_CAPTURAS")
+    if capturas:
+        capturas = Path(capturas)
+        capturas.mkdir(parents=True, exist_ok=True)
+    print(f"canal padrão: {padrao}, semente {semente}, repassando para {destino}, "
+          f"capturas em {capturas or '(desligado)'}", flush=True)
 
     def tratar(cabecalho, amostras):
         # O transmissor pode pedir outro Eb/N0 ou cenário para este quadro (varredura).
@@ -121,9 +146,12 @@ def main():
                                  config["ebn0_db"], rng, config["p_bom_ruim"],
                                  config["p_ruim_bom"], config["rajada_db"])
         info["semente"] = [semente, cabecalho["quadro"]]
-        ebn0 = "-" if info["ebn0_db"] is None else f"{info['ebn0_db']} dB"
-        print(f"quadro {cabecalho['quadro']:3d} {cabecalho['tecnica']:13s} canal {info['tipo']:7s} "
-              f"Eb/N0 {ebn0:>8s} sigma {info['sigma']:.3f} V", flush=True)
+        if cabecalho.get("tipo", "mensagem") == "mensagem":
+            ebn0 = "-" if info["ebn0_db"] is None else f"{info['ebn0_db']} dB"
+            print(f"quadro {cabecalho['quadro']:3d} {cabecalho['tecnica']:13s} canal {info['tipo']:7s} "
+                  f"Eb/N0 {ebn0:>8s} sigma {info['sigma']:.3f} V", flush=True)
+            if capturas:
+                capturar(capturas, cabecalho, amostras, recebido, info)
         with protocolo.conectar(*destino) as sock:
             protocolo.enviar_quadro(sock, dict(cabecalho, canal=info), recebido)
             return protocolo.receber_json(sock)
