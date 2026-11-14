@@ -1,0 +1,53 @@
+{
+  "data": "2026-11-14 12:02:52",
+  "bits_por_repeticao": 100000,
+  "sementes": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "ebn0_db": [
+    0.0,
+    2.0,
+    4.0,
+    6.0,
+    8.0,
+    10.0,
+    12.0,
+    14.0
+  ],
+  "canais": [
+    "awgn",
+    "rajadas"
+  ],
+  "tecnicas": [
+    "NRZ unipolar",
+    "NRZ polar",
+    "Manchester",
+    "ASK",
+    "FSK",
+    "BPSK",
+    "16-QAM"
+  ],
+  "amostras_por_bit": 100,
+  "taxa_bits": 1000,
+  "freq_amostragem": 100000,
+  "freq_portadora": 5000,
+  "freq_fsk": [
+    3000,
+    7000
+  ],
+  "amplitude": 1.0,
+  "rajadas": {
+    "p_bom_ruim": 0.01,
+    "p_ruim_bom": 0.1,
+    "rajada_db": 10.0
+  },
+  "semente_ruido": "default_rng([semente, 1 + índice técnica, índice canal, índice Eb/N0])",
+  "semente_bits": "default_rng([semente, 0])",
+  "python": "3.12.6",
+  "numpy": "2.5.4",
+  "matplotlib": "3.11.2"
+}

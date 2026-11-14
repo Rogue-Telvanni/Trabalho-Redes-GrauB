@@ -280,8 +280,8 @@ def grafico_awgn(resumo, ebn0s, limite, caminho, legenda_extra):
     # Canto superior direito: nunca tem dados (BER alta só ocorre com Eb/N0 baixo).
     ax.text(0.98, 0.97, "Tracejado: teoria\n"
             "esquerda, antipodal (NRZ polar, Manchester, BPSK): Q(√(2Eb/N0))\n"
-            "direita, on-off/ortogonal (NRZ unipolar, ASK, FSK): Q(√(Eb/N0))\n"
-            "meio, 16-QAM: 3/4 Q(√(0,8Eb/N0)), cerca de 4 dB acima do BPSK",
+            "meio, on-off/ortogonal (NRZ unipolar, ASK, FSK): Q(√(Eb/N0))\n"
+            "direita, 16-QAM: 3/4 Q(√(0,8Eb/N0)), cerca de 4 dB à direita do BPSK",
             transform=ax.transAxes, ha="right", va="top", fontsize=8.5, color=TINTA_2,
             linespacing=1.5)
     for i, nome in enumerate(ruido.TECNICAS):

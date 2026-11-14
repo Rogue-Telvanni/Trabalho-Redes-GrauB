@@ -1,0 +1,18 @@
+Mensagem: 'REDES DE COMPUTADORES - UNISINOS 2026' (296 bits)
+
+OK   ideal        NRZ unipolar  0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   ideal        NRZ polar     0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   ideal        Manchester    0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   ideal        ASK           0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   ideal        FSK           0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   ideal        BPSK          0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   ideal        16-QAM        0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   AWGN 30 dB   NRZ unipolar  0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   AWGN 30 dB   NRZ polar     0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   AWGN 30 dB   Manchester    0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   AWGN 30 dB   ASK           0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   AWGN 30 dB   FSK           0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   AWGN 30 dB   BPSK          0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+OK   AWGN 30 dB   16-QAM        0 bits errados  'REDES DE COMPUTADORES - UNISINOS 2026'
+
+Resultado: mensagem recuperada sem erros em todos os casos.

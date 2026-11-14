@@ -168,7 +168,7 @@ Trabalho-Redes-GrauB/
 └── README.md
 ```
 
-Pastas geradas ao executar (não versionadas por padrão): `logs/` (sessões Docker), `graficos/` (`main.py`) e `resultados/` (`experimentos.py`).
+A pasta `resultados/` (gerada pelo `experimentos.py`) está versionada, com os resultados brutos e os gráficos finais. As pastas `logs/` (sessões Docker) e `graficos/` (`main.py`) são geradas ao executar.
 
 ---
 
@@ -420,15 +420,13 @@ Barras de erro dos gráficos: intervalo de confiança de 95% (t de Student) sobr
 
 ### BER × Eb/N0 por técnica (AWGN e rajadas)
 
-<img width="2080" height="1280" alt="ber_por_tecnica" src="https://github.com/user-attachments/assets/74966ea1-ccfa-4d13-9c83-381b6c8c54f5" />
+<img alt="BER x Eb/N0 por técnica, em AWGN e rajadas" src="resultados/ber_por_tecnica.png" />
 
 Cada painel mostra uma técnica nos dois cenários. Os marcadores são a média simulada com IC 95%, e o tracejado é a teoria. As rajadas elevam a BER de forma mais visível em Eb/N0 alto, onde o AWGN sozinho quase não gera erros e a rajada passa a dominar.
 
 ### As técnicas em AWGN
 
-<img width="1440" height="960" alt="ber_awgn_tecnicas" src="https://github.com/user-attachments/assets/bdd91f18-235f-4455-8d6d-db139d23de66" />
-
-> As duas imagens acima são da versão com seis técnicas. Rode `python experimentos.py` para gerar as figuras atualizadas, que incluem o 16-QAM.
+<img alt="BER x Eb/N0 das sete técnicas em AWGN" src="resultados/ber_awgn_tecnicas.png" />
 
 As curvas formam **três grupos**:
 
@@ -440,7 +438,7 @@ A simulação coincide com a teoria, o que valida o canal e a calibração do ru
 
 ### Compromisso BER × eficiência espectral
 
-A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER em 8 dB nos dois canais) é gerada em `resultados/compromisso.md`. Resumo qualitativo:
+A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER em 8 dB nos dois canais) está em [resultados/compromisso.md](resultados/compromisso.md). Resumo qualitativo:
 
 | Técnica | Eficiência | Robustez a ruído | Quando faz sentido |
 |---|---|---|---|
@@ -485,7 +483,7 @@ A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER
 | Teste de consistência | ✅ Feito |
 | Tabela BER × eficiência | ✅ Feito |
 | Constelações / comparação com teoria (opcional) | ⚠️ Teoria feita; constelações pendentes |
-| Resultados brutos versionados no GitHub | ⚠️ Pendente (`resultados/` está no `.gitignore`) |
+| Resultados brutos versionados no GitHub | ✅ Feito (pasta `resultados/`) |
 | Vídeo de até 5 minutos | ⚠️ Pendente |
 
 ---
