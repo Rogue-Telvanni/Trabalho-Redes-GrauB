@@ -8,13 +8,14 @@ import numpy as np
 from matplotlib.transforms import blended_transform_factory
 
 import modulador
+import ruido
 
 SUPERFICIE = "#fcfcfb"
 TINTA = "#0b0b0b"
 TINTA_2 = "#52514e"
 GRADE = "#c3c2b7"
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]
-MARCADORES = ["o", "s", "^"]
+SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#7b4fd0"]
+MARCADORES = ["o", "s", "^", "D"]
 
 plt.rcParams.update({
     "figure.facecolor": SUPERFICIE, "axes.facecolor": SUPERFICIE,
@@ -74,7 +75,7 @@ def codificacao(bits, sinais, caminho):
 
 def modulacao(bits, referencia, sinais, parametros, caminho):
     """referencia: sinal digital; sinais: lista de (título, vetor)."""
-    fig, eixos = plt.subplots(len(sinais) + 1, 1, figsize=(11, 8.5), sharex=True)
+    fig, eixos = plt.subplots(len(sinais) + 1, 1, figsize=(11, 2.2 * (len(sinais) + 1) + 1), sharex=True)
     _degraus(eixos[0], referencia, TINTA_2)
     _marcar_bits(eixos[0], bits)
     eixos[0].set_ylim(-0.2, 1.3)
@@ -85,7 +86,8 @@ def modulacao(bits, referencia, sinais, parametros, caminho):
     for ax, (titulo, sinal) in zip(eixos[1:], sinais):
         ax.plot(t, sinal, color=SERIES[0], lw=1.1)
         _marcar_bits(ax, bits)
-        ax.set_ylim(-1.3, 1.3)
+        limite = max(1.3, 1.1 * float(np.abs(sinal).max()))  # o 16-QAM passa de 1 V
+        ax.set_ylim(-limite, limite)
         ax.set_yticks([-1, 0, 1])
         ax.set_ylabel("Tensão (V)")
         ax.set_title(titulo)
@@ -96,11 +98,27 @@ def modulacao(bits, referencia, sinais, parametros, caminho):
     plt.close(fig)
 
 
+def _posicoes(nomes):
+    """(linha, coluna) de cada técnica: banda base na coluna 0, modulações na 1."""
+    linhas = [0, 0]
+    posicoes = []
+    for nome in nomes:
+        coluna = 0 if nome in ruido.TECNICAS_BANDA_BASE else 1
+        posicoes.append((linhas[coluna], coluna))
+        linhas[coluna] += 1
+    return posicoes
+
+
 def ruido_ondas(bits, pares, sigma, caminho):
     """pares: lista de (nome, sinal limpo, sinal com ruído), 2 colunas."""
-    fig, eixos = plt.subplots(3, 2, figsize=(12, 7.5), sharex=True, sharey=True)
+    fig, eixos = plt.subplots(4, 2, figsize=(12, 10), sharex=True, sharey=True)
     t = modulador.eixo_tempo(len(bits)) * 1000
-    for ax, (nome, limpo, sujo) in zip(eixos.T.ravel(), pares):
+    posicoes = _posicoes([nome for nome, _, _ in pares])
+    for ax in eixos.ravel():
+        ax.set_visible(False)
+    for (nome, limpo, sujo), (linha, coluna) in zip(pares, posicoes):
+        ax = eixos[linha, coluna]
+        ax.set_visible(True)
         ax.plot(t, sujo, color=SERIES[1], lw=0.6, alpha=0.75, label="Recebido")
         ax.plot(t, limpo, color=SERIES[0], lw=0.9, label="Transmitido")
         _marcar_bits(ax, bits)
@@ -108,8 +126,10 @@ def ruido_ondas(bits, pares, sigma, caminho):
     eixos[0, 0].legend(loc="lower left", ncols=2, frameon=False, fontsize=9)
     for ax in eixos[:, 0]:
         ax.set_ylabel("Tensão (V)")
-    for ax in eixos[-1]:
-        ax.set_xlabel("Tempo (ms)")
+    for coluna in range(2):
+        ultimo = max((l for (l, c) in posicoes if c == coluna), default=0)
+        eixos[ultimo, coluna].set_xlabel("Tempo (ms)")
+        eixos[ultimo, coluna].xaxis.set_tick_params(labelbottom=True)
     fig.suptitle(f"Sinais com ruído gaussiano, sigma = {sigma} V", x=0.01, ha="left",
                  fontsize=10.5, color=TINTA_2)
     fig.tight_layout()
@@ -144,12 +164,17 @@ def curvas_ber(grupos, caminho):
 def sobreposicao_canal(paineis, titulo, caminho):
     """Sinal na entrada do canal (limpo) sobre o sinal na saída (com ruído).
 
-    paineis: até 6 dicionários com nome, subtitulo, bits, limpo, ruidoso,
-    rajada (booleano por bit) e errados (índices dos bits decodificados errados),
-    na ordem de ruido.TECNICAS: banda base na coluna 1, modulações na coluna 2.
+    paineis: até 7 dicionários com nome, subtitulo, bits, limpo, ruidoso,
+    rajada (booleano por bit) e errados (índices dos bits decodificados errados).
+    Banda base na coluna 1, modulações na coluna 2.
     """
-    fig, eixos = plt.subplots(3, 2, figsize=(13, 9), sharex=True)
-    for ax, p in zip(eixos.T.ravel(), paineis):
+    fig, eixos = plt.subplots(4, 2, figsize=(13, 11.5), sharex=True)
+    for ax in eixos.ravel():
+        ax.set_visible(False)
+    posicoes = _posicoes([p["nome"] for p in paineis])
+    for p, (linha, coluna) in zip(paineis, posicoes):
+        ax = eixos[linha, coluna]
+        ax.set_visible(True)
         t = np.arange(len(p["limpo"])) / modulador.FREQ_AMOSTRAGEM * 1000
         for i in np.flatnonzero(p["rajada"]):
             ax.axvspan(i * TB_MS, (i + 1) * TB_MS, color=FAIXA_RAJADA, lw=0, zorder=0)
@@ -159,10 +184,10 @@ def sobreposicao_canal(paineis, titulo, caminho):
         ax.axhline(0, color=GRADE, lw=0.8, zorder=0)
         ax.set_title(f"{p['nome']}   {p['subtitulo']}", fontsize=10)
         ax.set_ylabel("Tensão (V)")
-    for ax in eixos.T.ravel()[len(paineis):]:
-        ax.set_visible(False)
-    for ax in eixos[-1]:
-        ax.set_xlabel("Tempo (ms). Linhas tracejadas: limites de cada bit")
+    for coluna in range(2):
+        ultimo = max((l for (l, c) in posicoes if c == coluna), default=0)
+        eixos[ultimo, coluna].set_xlabel("Tempo (ms). Linhas tracejadas: limites de cada bit")
+        eixos[ultimo, coluna].xaxis.set_tick_params(labelbottom=True)
     alcas, rotulos = eixos[0, 0].get_legend_handles_labels()
     from matplotlib.patches import Patch
     alcas += [Patch(color=FAIXA_RAJADA), plt.Line2D([], [], ls="none", marker="$1$", color=ERRO)]

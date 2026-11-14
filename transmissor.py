@@ -44,7 +44,7 @@ MENSAGEM_PADRAO = "REDES DE COMPUTADORES - UNISINOS 2026"
 AJUDA = """\
 Digite uma frase (só ASCII, sem acentos) e tecle Enter para transmitir.
 Comandos:
-  /tecnica <nome>   técnica usada: todas, NRZ unipolar, NRZ polar, Manchester, ASK, FSK, BPSK
+  /tecnica <nome>   técnica usada: todas, NRZ unipolar, NRZ polar, Manchester, ASK, FSK, BPSK, 16-QAM
                     (pode listar várias com vírgula: /tecnica BPSK,FSK)
   /canal <tipo>     ideal | awgn | rajadas | padrao (volta ao configurado no container)
   /ebn0 <dB>        Eb/N0 do canal, ex.: /ebn0 4   (/ebn0 padrao volta ao do container)

@@ -13,7 +13,7 @@ Gera em logs/graficos_<sessão>/:
     ber_bruto.csv, ber_resumo.csv                um quadro por linha / resumo por ponto
     compromisso.csv, compromisso.md              BER x eficiência espectral
     sinal_<canal>_<Eb/N0>.png                    sinal enviado x sinal com ruído,
-                                                 as seis técnicas, um cenário por figura
+                                                 as sete técnicas, um cenário por figura
 """
 import argparse
 import json

@@ -27,12 +27,14 @@ def gerar_graficos_sinais(bits):
 
     f = modulador
     parametros = (f"Taxa de bits: {f.TAXA_BITS} bit/s   |   Amostragem: {f.FREQ_AMOSTRAGEM / 1000:.0f} kHz   |   "
-                  f"Amplitude: {f.AMPLITUDE:.0f} V   |   Portadora: {f.FREQ_PORTADORA / 1000:.0f} kHz (ASK, BPSK), "
+                  f"Amplitude: {f.AMPLITUDE:.0f} V   |   Portadora: {f.FREQ_PORTADORA / 1000:.0f} kHz (ASK, BPSK, 16-QAM), "
                   f"{f.FREQ_FSK_0 / 1000:.0f} e {f.FREQ_FSK_1 / 1000:.0f} kHz (FSK)")
     graficos.modulacao(bits, codificador.NRZunipolar(bits), [
         ("ASK: a AMPLITUDE representa o bit (bit 1 = portadora de 1 V, bit 0 = 0 V)", f.ASK(bits)),
         ("FSK: a FREQUÊNCIA representa o bit (bit 1 = 7 kHz, bit 0 = 3 kHz)", f.FSK(bits)),
         ("BPSK: a FASE representa o bit (bit 1 = 0°, bit 0 = 180°)", f.BPSK(bits)),
+        ("16-QAM: AMPLITUDE e FASE juntas, 4 bits por símbolo (2 bits no seno, 2 no cosseno)",
+         f.QAM16(bits)),
     ], parametros, PASTA / "2_modulacao_digital.png")
 
 

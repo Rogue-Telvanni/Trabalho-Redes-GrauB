@@ -45,8 +45,8 @@ T95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365,
        8: 2.306, 9: 2.262, 10: 2.228, 15: 2.131, 20: 2.086, 30: 2.042}
 
 # Paleta categórica (ordem fixa) e marcadores: cada série tem cor E marcador.
-CORES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"]
-MARCADORES = ["o", "s", "^", "D", "v", "P"]
+CORES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#7b4fd0"]
+MARCADORES = ["o", "s", "^", "D", "v", "P", "X"]
 TINTA_2, GRADE, SUPERFICIE = "#52514e", "#e1e0d9", "#fcfcfb"
 
 
@@ -63,12 +63,14 @@ def largura_de_banda(tecnica):
     Manchester: duas metades de Tb/2 -> primeiro nulo em 2 Rb.
     ASK e BPSK: o espectro NRZ deslocado para a portadora ocupa +-Rb -> 2 Rb.
     FSK: as duas portadoras ficam |f1 - f0| afastadas, cada uma com +-Rb.
+    16-QAM: o símbolo dura 4 bits (Rs = Rb / 4), então ocupa +-Rs = Rb / 2.
     """
     rb = modulador.TAXA_BITS
     return {
         "NRZ unipolar": rb, "NRZ polar": rb, "Manchester": 2 * rb,
         "ASK": 2 * rb, "BPSK": 2 * rb,
         "FSK": abs(modulador.FREQ_FSK_1 - modulador.FREQ_FSK_0) + 2 * rb,
+        "16-QAM": 2 * rb / modulador.BITS_POR_SIMBOLO_QAM,
     }[tecnica]
 
 
@@ -172,7 +174,7 @@ def tabela_compromisso(resumo, ebn0_ref):
         no_ref = {c: next((y for x, y in curva[c] if x == ebn0_ref), None) for c in CANAIS}
         sim = ebn0_simulado_para(curva["awgn"], 1e-3)
         linhas.append({
-            "tecnica": nome, "bits_por_simbolo": 1, "banda_hz": b,
+            "tecnica": nome, "bits_por_simbolo": canal.BITS_POR_SIMBOLO.get(nome, 1), "banda_hz": b,
             "eficiencia_bit_s_hz": modulador.TAXA_BITS / b,
             "ebn0_teorico_ber_1e-3_db": round(ebn0_necessario(nome, 1e-3), 2),
             "ebn0_simulado_ber_1e-3_db": None if sim is None else round(sim, 2),
@@ -194,17 +196,18 @@ def salvar_csv(caminho, linhas):
 def salvar_compromisso_md(caminho, linhas, ebn0_ref):
     def fmt(v):
         return "-" if v is None else (f"{v:.2e}" if isinstance(v, float) and v < 0.01 else f"{v:.3g}")
-    cab = ["Técnica", "Banda (Hz)", "η (bit/s/Hz)", "Eb/N0 p/ BER 1e-3 teórico (dB)",
+    cab = ["Técnica", "Bits/símbolo", "Banda (Hz)", "η (bit/s/Hz)", "Eb/N0 p/ BER 1e-3 teórico (dB)",
            "simulado (dB)", "Eb/N0 p/ BER 1e-5 (dB)", f"BER AWGN {ebn0_ref:g} dB",
            f"BER rajadas {ebn0_ref:g} dB"]
-    corpo = [[r["tecnica"], f"{r['banda_hz']:.0f}", f"{r['eficiencia_bit_s_hz']:.3f}",
+    corpo = [[r["tecnica"], str(r["bits_por_simbolo"]), f"{r['banda_hz']:.0f}",
+              f"{r['eficiencia_bit_s_hz']:.3f}",
               fmt(r["ebn0_teorico_ber_1e-3_db"]), fmt(r["ebn0_simulado_ber_1e-3_db"]),
               fmt(r["ebn0_teorico_ber_1e-5_db"]), fmt(r[f"ber_awgn_{ebn0_ref:g}db"]),
               fmt(r[f"ber_rajadas_{ebn0_ref:g}db"])] for r in linhas]
     texto = "| " + " | ".join(cab) + " |\n|" + "---|" * len(cab) + "\n"
     texto += "".join("| " + " | ".join(l) + " |\n" for l in corpo)
     texto += (f"\nBanda nominal até o primeiro nulo, taxa de bits {modulador.TAXA_BITS} bit/s. "
-              "Todas as técnicas levam 1 bit por símbolo.\n")
+              "Todas as técnicas levam 1 bit por símbolo, exceto o 16-QAM (4).\n")
     caminho.write_text(texto, encoding="utf-8")
     return texto
 
@@ -242,8 +245,10 @@ def _rotulo_limite(ax, ebn0s, limite):
 
 
 def grafico_por_tecnica(resumo, ebn0s, limite, caminho, legenda_extra):
-    fig, eixos = plt.subplots(2, 3, figsize=(13, 8), sharex=True, sharey=True)
+    fig, eixos = plt.subplots(2, 4, figsize=(17, 8), sharex=True, sharey=True)
     xt = np.linspace(min(ebn0s), max(ebn0s), 200)
+    for ax in eixos.ravel()[len(ruido.TECNICAS):]:
+        ax.set_visible(False)  # sobra um painel: 7 técnicas em 2 x 4
     for ax, nome in zip(eixos.ravel(), ruido.TECNICAS):
         for i, tipo in enumerate(CANAIS):
             rotulo = "AWGN" if tipo == "awgn" else "Rajadas"
@@ -252,13 +257,14 @@ def grafico_por_tecnica(resumo, ebn0s, limite, caminho, legenda_extra):
             _desenhar(ax, *_serie(resumo, nome, tipo), CORES[i], MARCADORES[i], rotulo)
         _eixos(ax, limite)
         ax.set_title(nome, pad=8)
-    for ax in eixos[-1]:
+    for ax in eixos.ravel()[:len(ruido.TECNICAS)]:
+        _rotulo_limite(ax, ebn0s, limite)
+    for ax in (eixos[0, 3], eixos[1, 0], eixos[1, 1], eixos[1, 2]):
         ax.set_xlabel("Eb/N0 (dB)")
+        ax.xaxis.set_tick_params(labelbottom=True)
     for ax in eixos[:, 0]:
         ax.set_ylabel("BER")
     eixos[0, 0].legend(frameon=False, loc="upper right")
-    for ax in eixos.ravel():
-        _rotulo_limite(ax, ebn0s, limite)
     fig.suptitle("BER x Eb/N0: AWGN e rajadas. Marcadores: média simulada com IC 95%. "
                  f"Tracejado: teoria. {legenda_extra}", x=0.01, ha="left", fontsize=10, color=TINTA_2)
     fig.tight_layout()
@@ -269,12 +275,13 @@ def grafico_por_tecnica(resumo, ebn0s, limite, caminho, legenda_extra):
 def grafico_awgn(resumo, ebn0s, limite, caminho, legenda_extra):
     fig, ax = plt.subplots(figsize=(9, 6))
     xt = np.linspace(min(ebn0s), max(ebn0s), 200)
-    for tecnica in ("BPSK", "ASK"):
+    for tecnica in ("BPSK", "ASK", "16-QAM"):
         ax.plot(xt, [canal.ber_teorica(tecnica, "awgn", v) for v in xt], color=TINTA_2, lw=1.2, ls="--")
     # Canto superior direito: nunca tem dados (BER alta só ocorre com Eb/N0 baixo).
     ax.text(0.98, 0.97, "Tracejado: teoria\n"
-            "curva inferior, antipodal (NRZ polar, Manchester, BPSK): Q(√(2Eb/N0))\n"
-            "curva superior, on-off/ortogonal (NRZ unipolar, ASK, FSK): Q(√(Eb/N0))",
+            "esquerda, antipodal (NRZ polar, Manchester, BPSK): Q(√(2Eb/N0))\n"
+            "direita, on-off/ortogonal (NRZ unipolar, ASK, FSK): Q(√(Eb/N0))\n"
+            "meio, 16-QAM: 3/4 Q(√(0,8Eb/N0)), cerca de 4 dB acima do BPSK",
             transform=ax.transAxes, ha="right", va="top", fontsize=8.5, color=TINTA_2,
             linespacing=1.5)
     for i, nome in enumerate(ruido.TECNICAS):
@@ -284,7 +291,7 @@ def grafico_awgn(resumo, ebn0s, limite, caminho, legenda_extra):
     ax.set_xlabel("Eb/N0 (dB)")
     ax.set_ylabel("BER")
     ax.legend(frameon=False, loc="center left", ncols=2)
-    ax.set_title(f"Seis técnicas em AWGN: dois grupos separados por 3 dB. {legenda_extra}", pad=8)
+    ax.set_title(f"Sete técnicas em AWGN. {legenda_extra}", pad=8)
     fig.tight_layout()
     fig.savefig(caminho, dpi=160)
     plt.close(fig)

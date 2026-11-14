@@ -51,6 +51,39 @@ def teste_parametro_de_cada_modulacao():
     assert np.allclose(m.BPSK(zeros), -m.BPSK(uns))                # BPSK: fase de 180°
 
 
+def teste_16qam_constelacao_e_gray():
+    """Os 16 símbolos aparecem, cada um com 4 bits, e vizinhos diferem em 1 bit (Gray)."""
+    bits = np.array([[a, b, c, d] for a in (0, 1) for b in (0, 1) for c in (0, 1) for d in (0, 1)])
+    i, q = m.simbolos_QAM16(m.QAM16(bits.ravel()))
+    pontos = {(round(x / m.NIVEL_QAM), round(y / m.NIVEL_QAM)): tuple(b)
+              for x, y, b in zip(i, q, bits)}
+    assert len(pontos) == 16
+    assert {x for x, _ in pontos} == {-3, -1, 1, 3}
+    for (x, y), b in pontos.items():
+        for vizinho in ((x + 2, y), (x, y + 2)):
+            if vizinho in pontos:
+                assert sum(u != v for u, v in zip(b, pontos[vizinho])) == 1, (b, pontos[vizinho])
+
+
+def teste_16qam_potencia_e_bits_por_simbolo():
+    """Potência média 5 d^2 (a conta da teoria) e recusa tamanho que não seja múltiplo de 4."""
+    bits = np.random.default_rng(6).integers(0, 2, 40_000)
+    assert np.isclose((m.QAM16(bits) ** 2).mean(), 5 * m.NIVEL_QAM ** 2, rtol=0.02)
+    assert len(m.QAM16(bits)) == len(bits) * m.AMOSTRAS_POR_BIT
+    try:
+        m.QAM16([1, 0, 1])
+    except ValueError:
+        return
+    raise AssertionError("aceitou número de bits que não é múltiplo de 4")
+
+
+def teste_probabilidades_de_rajada_somam_um():
+    for n in (1, 4):
+        assert np.isclose(sum(canal.bits_ruins_no_simbolo(n, 0.01, 0.1)), 1)
+    # 1 bit por símbolo: a probabilidade de "ruim" é a fração estacionária
+    assert np.isclose(canal.bits_ruins_no_simbolo(1, 0.01, 0.1)[1], 0.01 / 0.11)
+
+
 def teste_ber_simulada_igual_a_teorica():
     """Num ponto de BER mensurável, a simulação tem de bater com a teoria."""
     rng = np.random.default_rng(3)

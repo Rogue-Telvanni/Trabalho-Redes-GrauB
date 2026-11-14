@@ -29,6 +29,7 @@ from pathlib import Path
 import numpy as np
 
 import protocolo
+import ruido
 from ruido import Q
 
 TIPOS = ("ideal", "awgn", "rajadas")
@@ -46,6 +47,8 @@ K_TEORICO = {
     "NRZ unipolar": 1, "NRZ polar": 2, "Manchester": 2,
     "ASK": 1, "FSK": 1, "BPSK": 2,
 }
+# O 16-QAM tem fórmula própria (ruido.ber_qam16_ebn0) e leva 4 bits por símbolo.
+BITS_POR_SIMBOLO = {"16-QAM": 4}
 
 
 def sigma_para_ebn0(sinal, amostras_por_bit, ebn0_db):
@@ -90,19 +93,52 @@ def aplicar(sinal, amostras_por_bit, tipo, ebn0_db, rng,
     return sinal + ruido, info
 
 
+def ber_awgn(tecnica, ebn0):
+    """BER teórica em AWGN, com Eb/N0 linear (não em dB)."""
+    if tecnica == "16-QAM":
+        return ruido.ber_qam16_ebn0(ebn0)
+    return Q(sqrt(K_TEORICO[tecnica] * ebn0))
+
+
+def bits_ruins_no_simbolo(n_bits, p_bom_ruim, p_ruim_bom):
+    """Probabilidade de 0, 1, ..., n_bits bits em rajada dentro de n_bits bits seguidos.
+
+    Percorre a cadeia de Gilbert-Elliott a partir do estado estacionário.
+    """
+    p_ruim = p_bom_ruim / (p_bom_ruim + p_ruim_bom)
+    estado = {(False, 0): 1 - p_ruim, (True, 1): p_ruim}  # (em rajada?, bits ruins até agora)
+    for _ in range(n_bits - 1):
+        novo = {}
+        for (ruim, k), p in estado.items():
+            p_continua_ruim = 1 - p_ruim_bom if ruim else p_bom_ruim
+            for vai_ruim, q in ((True, p_continua_ruim), (False, 1 - p_continua_ruim)):
+                chave = (vai_ruim, k + vai_ruim)
+                novo[chave] = novo.get(chave, 0) + p * q
+        estado = novo
+    distribuicao = [0.0] * (n_bits + 1)
+    for (_, k), p in estado.items():
+        distribuicao[k] += p
+    return distribuicao
+
+
 def ber_teorica(tecnica, tipo, ebn0_db, p_bom_ruim=P_BOM_RUIM, p_ruim_bom=P_RUIM_BOM,
                 rajada_db=RAJADA_DB):
-    """BER esperada. Nas rajadas é a média ponderada pelo tempo em cada estado."""
+    """BER esperada. Nas rajadas é a média ponderada pelo tempo em cada estado.
+
+    O ruído do símbolo é a média do ruído de seus bits: com k dos n bits do
+    símbolo em rajada, a variância sobe de (1 + (G - 1) k / n), G = 10^(dB/10).
+    Com 1 bit por símbolo, isso é só "bom" ou "ruim".
+    """
     if tipo == "ideal":
         return 0.0
-    k = K_TEORICO[tecnica]
     ebn0 = 10 ** (ebn0_db / 10)
-    bom = Q(sqrt(k * ebn0))
     if tipo == "awgn":
-        return bom
-    ruim = Q(sqrt(k * ebn0 / 10 ** (rajada_db / 10)))
-    fracao_ruim = p_bom_ruim / (p_bom_ruim + p_ruim_bom)
-    return (1 - fracao_ruim) * bom + fracao_ruim * ruim
+        return ber_awgn(tecnica, ebn0)
+    ganho = 10 ** (rajada_db / 10)
+    n = BITS_POR_SIMBOLO.get(tecnica, 1)
+    probabilidades = bits_ruins_no_simbolo(n, p_bom_ruim, p_ruim_bom)
+    return sum(p * ber_awgn(tecnica, ebn0 / (1 + (ganho - 1) * k / n))
+               for k, p in enumerate(probabilidades))
 
 
 def capturar(pasta, cabecalho, limpo, recebido, info):
