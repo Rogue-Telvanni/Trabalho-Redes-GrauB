@@ -22,7 +22,8 @@
 #   VARRER_CANAIS   cenários da mensagem          (padrão: ideal,awgn,rajadas)
 #   VARRER_EBN0_DB  Eb/N0 da mensagem             (padrão: 20,8)
 #   DURACAO_S       segundos enviando dados aleatórios (padrão: 30; 0 desliga)
-#   BITS_POR_QUADRO bits aleatórios por quadro    (padrão: 20000)
+#   BITS_POR_QUADRO bits aleatórios por quadro    (padrão: 100000)
+#   MIN_RODADAS     rodadas mínimas de dados      (padrão: 5; vale mesmo se DURACAO_S acabar)
 #   DADOS_CANAIS    cenários dos dados            (padrão: awgn,rajadas)
 #   DADOS_EBN0_DB   Eb/N0 dos dados               (padrão: 0,2,4,6,8,10,12,14)
 #   P_BOM_RUIM, P_RUIM_BOM, RAJADA_DB   parâmetros das rajadas
@@ -35,7 +36,7 @@ cd "$(dirname "$0")"
 
 modo="${1:-automatico}"
 case "$modo" in
-    -h|--help) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     automatico|interativo) ;;
     *) echo "modo desconhecido: $modo (use: automatico | interativo | --help)" >&2; exit 2 ;;
 esac
@@ -72,7 +73,7 @@ if [[ "$modo" == "interativo" ]]; then
     echo
     docker compose run --rm transmissor python transmissor.py --interativo || status=$?
 else
-    echo "==> Transmitindo (mensagem + ${DURACAO_S:-30} s de dados)..."
+    echo "==> Transmitindo (mensagem + dados: ${DURACAO_S:-30} s e no mínimo ${MIN_RODADAS:-5} rodadas)..."
     docker compose up --abort-on-container-exit --exit-code-from transmissor || status=$?
     if [[ $status -eq 0 && "${DURACAO_S:-30}" != "0" ]]; then
         echo

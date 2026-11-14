@@ -8,7 +8,8 @@ Modos:
                                        2. se DURACAO_S > 0, envia quadros de bits
                                           aleatórios por DURACAO_S segundos, em
                                           rodízio por técnica x cenário x Eb/N0
-                                          (dados para as curvas de BER)
+                                          (dados para as curvas de BER), com no
+                                          mínimo MIN_RODADAS rodadas
     python transmissor.py --interativo lê frases do teclado e envia cada uma;
                                        comandos começam com "/" (digite /ajuda)
 
@@ -19,7 +20,8 @@ Variáveis de ambiente:
     VARRER_EBN0_DB   Eb/N0 da mensagem (padrão: "20,8": 20 dB deixa ver a forma
                      de onda sob o ruído, 8 dB mostra erros acontecendo)
     DURACAO_S        segundos enviando dados aleatórios (padrão: 0, desligado)
-    BITS_POR_QUADRO  bits aleatórios por quadro de dados (padrão: 20000)
+    BITS_POR_QUADRO  bits aleatórios por quadro de dados (padrão: 100000)
+    MIN_RODADAS      mínimo de rodadas (repetições) mesmo que DURACAO_S acabe (padrão: 5)
     DADOS_CANAIS     cenários dos dados (padrão: "awgn,rajadas")
     DADOS_EBN0_DB    Eb/N0 dos dados (padrão: "0,2,4,6,8,10,12,14")
     SEMENTE          semente dos bits aleatórios (padrão: 42)
@@ -131,25 +133,32 @@ def enviar_mensagem(tx, tecnicas):
             imprimir(tx.quadro, tecnica, tx.enviar_texto(texto, tecnica, controle))
 
 
+def _milhar(n):
+    """1000000 -> '1.000.000' (separador de milhar brasileiro)."""
+    return f"{n:,}".replace(",", ".")
+
+
 def enviar_dados(tx, tecnicas, duracao_s):
     """Parte 2: bits aleatórios por duracao_s segundos, em rodadas completas.
 
     Uma rodada passa uma vez por cada combinação técnica x cenário x Eb/N0, e
     cada rodada usa bits novos: as rodadas são as repetições do experimento.
     O tempo só é conferido entre rodadas, para que todos os pontos tenham o
-    mesmo número de repetições (a última rodada pode passar um pouco dos 30 s).
+    mesmo número de repetições. O envio só para quando passou duracao_s E
+    foram feitas pelo menos MIN_RODADAS rodadas (o PDF pede 5 repetições).
     """
-    n_bits = int(os.environ.get("BITS_POR_QUADRO", 20_000))
+    n_bits = int(os.environ.get("BITS_POR_QUADRO", 100_000))
+    min_rodadas = int(os.environ.get("MIN_RODADAS", 5))
     canais = _lista("DADOS_CANAIS", "awgn,rajadas")
     ebn0s = _lista("DADOS_EBN0_DB", "0,2,4,6,8,10,12,14", float)
     semente = int(os.environ.get("SEMENTE", 42))
     combinacoes = list(itertools.product(canais, ebn0s, tecnicas))
     print(f"\ndados: {duracao_s:g} s de quadros com {n_bits} bits aleatórios, rodadas de "
           f"{len(combinacoes)} quadros ({len(tecnicas)} técnicas x {len(canais)} cenários x "
-          f"{len(ebn0s)} Eb/N0)", flush=True)
+          f"{len(ebn0s)} Eb/N0), no mínimo {min_rodadas} rodadas", flush=True)
     inicio = time.time()
     rodada = 0
-    while rodada == 0 or time.time() - inicio < duracao_s:
+    while rodada < max(min_rodadas, 1) or time.time() - inicio < duracao_s:
         bits = np.random.default_rng([semente, rodada]).integers(0, 2, n_bits)
         falhas = 0
         for canal_tipo, ebn0_db, tecnica in combinacoes:
@@ -159,10 +168,10 @@ def enviar_dados(tx, tecnicas, duracao_s):
         rodada += 1
         decorrido = time.time() - inicio
         print(f"  rodada {rodada:2d} concluída  ({decorrido:5.1f} s, "
-              f"{rodada * n_bits:,} bits por ponto){'  FALHAS: ' + str(falhas) if falhas else ''}"
-              .replace(",", "."), flush=True)
+              f"{_milhar(rodada * n_bits)} bits por ponto)"
+              f"{'  FALHAS: ' + str(falhas) if falhas else ''}", flush=True)
     print(f"dados: {rodada} rodadas em {time.time() - inicio:.1f} s, "
-          f"{rodada * n_bits:,} bits por ponto".replace(",", "."), flush=True)
+          f"{_milhar(rodada * n_bits)} bits por ponto", flush=True)
 
 
 def modo_interativo(tx, tecnicas):

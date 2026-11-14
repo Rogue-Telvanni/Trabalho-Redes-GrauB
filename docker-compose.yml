@@ -55,7 +55,8 @@ services:
       VARRER_CANAIS: ${VARRER_CANAIS:-ideal,awgn,rajadas}   # cenários da mensagem
       VARRER_EBN0_DB: ${VARRER_EBN0_DB:-20,8}               # Eb/N0 da mensagem
       DURACAO_S: ${DURACAO_S:-30}                           # segundos enviando dados aleatórios
-      BITS_POR_QUADRO: ${BITS_POR_QUADRO:-20000}
+      BITS_POR_QUADRO: ${BITS_POR_QUADRO:-100000}
+      MIN_RODADAS: ${MIN_RODADAS:-5}                        # repetições mínimas (o PDF pede 5)
       DADOS_CANAIS: ${DADOS_CANAIS:-awgn,rajadas}
       DADOS_EBN0_DB: ${DADOS_EBN0_DB:-0,2,4,6,8,10,12,14}
       SEMENTE: ${SEMENTE:-42}
