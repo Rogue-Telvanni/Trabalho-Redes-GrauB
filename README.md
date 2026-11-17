@@ -467,5 +467,8 @@ A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER
 ---
 
 ## 🎥 Demonstração em Vídeo
-
-> Link do vídeo (máx. 5 min) mostrando a execução do simulador e os principais resultados: _a adicionar_.
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=vIUJy4S8zi8">
+    <img src="https://img.youtube.com/vi/vIUJy4S8zi8/maxresdefault.jpg" alt="Demostração algoritmo custom" width="700">
+  </a>
+</p
