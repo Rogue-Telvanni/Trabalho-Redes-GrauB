@@ -24,6 +24,7 @@ Projeto prático do Grau B (GB) da disciplina de Redes de Computadores (UNISINOS
 8. [Dados Coletados e Reprodutibilidade](#-dados-coletados-e-reprodutibilidade)
 9. [Resultados e Análise](#-resultados-e-análise)
 10. [Demonstração em Vídeo](#-demonstração-em-vídeo)
+11. [Demonstração em Vídeo - Teste interativo](#-demonstração-em-vídeo---teste-interativo)
 
 ---
 
@@ -471,4 +472,13 @@ A tabela completa (com o Eb/N0 necessário para BER = 10⁻³ e 10⁻⁵ e a BER
   <a href="https://www.youtube.com/watch?v=vIUJy4S8zi8">
     <img src="https://img.youtube.com/vi/vIUJy4S8zi8/maxresdefault.jpg" alt="Demostração algoritmo custom" width="700">
   </a>
-</p
+</p>
+
+---
+
+## 🎥 Demonstração em Vídeo - Teste interativo
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=emLTss5Hf5E">
+    <img src="https://img.youtube.com/vi/emLTss5Hf5E/maxresdefault.jpg" alt="Demonstração do teste interativo" width="700">
+  </a>
+</p>
