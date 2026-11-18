@@ -14,7 +14,7 @@ Gera em resultados/:
     ber_resumo.csv     média, desvio, IC 95% e BER teórica por ponto
     compromisso.csv    tabela BER x eficiência espectral (também em .md)
     ber_por_tecnica.png    AWGN x rajadas, um painel por técnica
-    ber_awgn_tecnicas.png  as sete técnicas juntas em AWGN
+    ber_awgn_tecnicas.png  as sete técnicas em AWGN (codificações e modulações lado a lado)
     constelacao_16qam.png  constelação do 16-QAM antes e depois do canal
 """
 import argparse
@@ -279,26 +279,38 @@ def grafico_por_tecnica(resumo, ebn0s, limite, caminho, legenda_extra):
 
 
 def grafico_awgn(resumo, ebn0s, limite, caminho, legenda_extra):
-    fig, ax = plt.subplots(figsize=(9, 6))
+    """As sete técnicas em AWGN: codificações de linha à esquerda, modulações à direita."""
+    grupos = [
+        ("Codificações de linha", list(ruido.TECNICAS_BANDA_BASE), ("NRZ polar", "NRZ unipolar"),
+         "Tracejado: teoria\n"
+         "esquerda, antipodal (NRZ polar, Manchester): Q(√(2Eb/N0))\n"
+         "direita, on-off (NRZ unipolar): Q(√(Eb/N0)), 3 dB à direita"),
+        ("Modulações digitais", list(ruido.TECNICAS_MODULACAO), ("BPSK", "ASK", "16-QAM"),
+         "Tracejado: teoria\n"
+         "esquerda, antipodal (BPSK): Q(√(2Eb/N0))\n"
+         "meio, on-off/ortogonal (ASK, FSK): Q(√(Eb/N0))\n"
+         "direita, 16-QAM: 3/4 Q(√(0,8Eb/N0))"),
+    ]
+    fig, eixos = plt.subplots(1, 2, figsize=(14, 6.2), sharey=True)
     xt = np.linspace(min(ebn0s), max(ebn0s), 200)
-    for tecnica in ("BPSK", "ASK", "16-QAM"):
-        ax.plot(xt, [canal.ber_teorica(tecnica, "awgn", v) for v in xt], color=TINTA_2, lw=1.2, ls="--")
-    # Canto superior direito: nunca tem dados (BER alta só ocorre com Eb/N0 baixo).
-    ax.text(0.98, 0.97, "Tracejado: teoria\n"
-            "esquerda, antipodal (NRZ polar, Manchester, BPSK): Q(√(2Eb/N0))\n"
-            "meio, on-off/ortogonal (NRZ unipolar, ASK, FSK): Q(√(Eb/N0))\n"
-            "direita, 16-QAM: 3/4 Q(√(0,8Eb/N0)), cerca de 4 dB à direita do BPSK",
-            transform=ax.transAxes, ha="right", va="top", fontsize=8.5, color=TINTA_2,
-            linespacing=1.5)
-    for i, nome in enumerate(ruido.TECNICAS):
-        _desenhar(ax, *_serie(resumo, nome, "awgn"), CORES[i], MARCADORES[i], nome)
-    _eixos(ax, limite)
-    _rotulo_limite(ax, ebn0s, limite)
-    ax.set_xlabel("Eb/N0 (dB)")
-    ax.set_ylabel("BER")
-    ax.legend(frameon=False, loc="center left", ncols=2)
-    ax.set_title(f"Sete técnicas em AWGN. {legenda_extra}", pad=8)
-    fig.tight_layout()
+    todas = list(ruido.TECNICAS)
+    for ax, (titulo, nomes, teoria, texto) in zip(eixos, grupos):
+        for tecnica in teoria:
+            ax.plot(xt, [canal.ber_teorica(tecnica, "awgn", v) for v in xt], color=TINTA_2, lw=1.2, ls="--")
+        # Canto superior direito: nunca tem dados (BER alta só ocorre com Eb/N0 baixo).
+        ax.text(0.98, 0.97, texto, transform=ax.transAxes, ha="right", va="top",
+                fontsize=8.5, color=TINTA_2, linespacing=1.5)
+        for nome in nomes:
+            i = todas.index(nome)
+            _desenhar(ax, *_serie(resumo, nome, "awgn"), CORES[i], MARCADORES[i], nome)
+        _eixos(ax, limite)
+        _rotulo_limite(ax, ebn0s, limite)
+        ax.set_xlabel("Eb/N0 (dB)")
+        ax.set_title(titulo, pad=8)
+        ax.legend(frameon=False, loc="center left")
+    eixos[0].set_ylabel("BER")
+    fig.suptitle(f"BER x Eb/N0 em AWGN. {legenda_extra}", x=0.01, ha="left", fontsize=10.5, color=TINTA_2)
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     fig.savefig(caminho, dpi=160)
     plt.close(fig)
 

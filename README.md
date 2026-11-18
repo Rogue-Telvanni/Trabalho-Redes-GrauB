@@ -406,7 +406,7 @@ Parâmetros fixos do sinal (em `modulador.py`): taxa de 1000 bit/s, amostragem d
 | `ber_resumo.csv` | Média, desvio, IC 95%, mínimo, máximo e BER teórica por ponto |
 | `compromisso.csv` / `.md` | Tabela BER × eficiência espectral |
 | `ber_por_tecnica.png` | AWGN × rajadas, um painel por técnica |
-| `ber_awgn_tecnicas.png` | As sete técnicas juntas em AWGN |
+| `ber_awgn_tecnicas.png` | As sete técnicas em AWGN: codificações de linha e modulações lado a lado |
 | `constelacao_16qam.png` | Constelação do 16-QAM antes e depois do canal |
 
 **Reprodutibilidade:** as sementes são `default_rng([repetição, ...])` e o ruído de cada quadro nos containers usa `[SEMENTE, nº do quadro]`. Rodar o mesmo comando duas vezes dá exatamente os mesmos números. O `config.json` registra tudo o que é necessário para refazer o experimento.
